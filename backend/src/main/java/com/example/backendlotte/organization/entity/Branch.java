@@ -1,7 +1,7 @@
-package com.example.backendlotte.hotel.entity;
+package com.example.backendlotte.organization.entity;
 
 import com.example.backendlotte.global.entity.BaseEntity;
-import com.example.backendlotte.organization.entity.HotelCompany;
+import com.example.backendlotte.hotel.entity.Hotel;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,19 +17,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "hotels")
+@Table(name = "branches")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Hotel extends BaseEntity {
+public class Branch extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "hotel_id", nullable = false)
+    private Hotel hotel;
+
     @Column(nullable = false, length = 100)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hotel_company_id")
-    private HotelCompany hotelCompany;
+    @Column(nullable = false)
+    private boolean active = true;
 }
