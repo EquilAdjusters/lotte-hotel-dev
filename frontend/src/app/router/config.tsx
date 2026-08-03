@@ -1,0 +1,31 @@
+import type { RouteObject } from "react-router-dom";
+import NotFoundPage from "@/pages/errors/not-found/page";
+import DashboardPage from "@/pages/dashboard/page";
+import LoginPage from "@/pages/auth/login/page";
+import ClaimCreatePage from "@/pages/claims/create/page";
+import ClaimListPage from "@/pages/claims/list/page";
+
+const routes: RouteObject[] = [
+  {
+    path: "/",
+    element: <DashboardPage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/claims/new",
+    element: <ClaimCreatePage />,
+  },
+  {
+    path: "/claims",
+    element: <ClaimListPage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
+];
+
+export default routes;

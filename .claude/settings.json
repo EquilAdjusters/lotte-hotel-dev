@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm *)",
+      "Bash(rm -rf \"/c/workspace/lotte-hotel/frontend/.gradle\" \"/c/workspace/lotte-hotel/frontend/settings.gradle\")",
+      "Bash(rm -rf \"/c/workspace/lotte-hotel/frontend/src/main\" \"/c/workspace/lotte-hotel/frontend/src/test\")",
+      "Bash(git mv *)",
+      "Bash(npm ls *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(lsof -ti:5173 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done')",
+      "Bash(chromium-cli --session lotte --help)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Read(//c//**)",
+      "Bash(npx --yes -p playwright node shot.mjs .)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5173/ dashboard.png)",
+      "Bash(npx --yes playwright install chromium)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5173/login login.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5173/claims/new claims-new.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5173/claims claims-list.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5173/does-not-exist not-found.png)",
+      "Bash(cat /tmp/vite-dev.log)",
+      "Read(//tmp/**)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5174/ dashboard.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5174/login login.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5174/claims/new claims-new.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5174/claims claims-list.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 --full-page http://localhost:5174/does-not-exist not-found.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=375,900 --full-page http://localhost:5174/ dashboard-mobile.png)"
+    ]
+  }
+}
