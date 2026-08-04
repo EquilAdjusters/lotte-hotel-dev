@@ -24,6 +24,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/hotel_claim_local?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      INITIAL_ADMIN_LOGIN_ID: ${INITIAL_ADMIN_LOGIN_ID}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
+      INITIAL_ADMIN_DISPLAY_NAME: ${INITIAL_ADMIN_DISPLAY_NAME}
     ports:
       - "8080:8080"
     depends_on:

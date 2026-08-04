@@ -97,4 +97,68 @@ public class Account extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    private Account(
+        String loginId,
+        String passwordHash,
+        String displayName,
+        Role role,
+        ScopeType scopeType,
+        AccountStatus status,
+        boolean sharedAccount,
+        LocalDateTime passwordChangedAt
+    ) {
+        this.loginId = loginId;
+        this.passwordHash = passwordHash;
+        this.displayName = displayName;
+        this.role = role;
+        this.scopeType = scopeType;
+        this.status = status;
+        this.sharedAccount = sharedAccount;
+        this.failedLoginCount = 0;
+        this.passwordChangedAt = passwordChangedAt;
+    }
+
+    public static Account createAdmin1 (
+        String loginId,
+        String passwordHash,
+        String displayName
+    ) {
+        return new Account(
+                loginId,
+                passwordHash,
+                displayName,
+                Role.ADMIN1,
+                ScopeType.ALL,
+                AccountStatus.ACTIVE,
+                false,
+                LocalDateTime.now());
+    }
+    
+    public void loginSucceeded() {
+        this.failedLoginCount = 0;
+        this.lastLoginAt = LocalDateTime.now();
+    }
+
+    public boolean loginFailed(int maxFailures) {
+        if (this.status == AccountStatus.LOCKED) {
+            return true;
+        }
+
+        this.failedLoginCount++;
+
+        if (this.failedLoginCount >= maxFailures) {
+            this.status = AccountStatus.LOCKED;
+            this.lockedAt = LocalDateTime.now();
+            return true;
+        }
+
+        return false;
+    }
+
+    public void unlock() {
+        this.status = AccountStatus.ACTIVE;
+        this.failedLoginCount = 0;
+        this.lockedAt = null;
+    }
 }

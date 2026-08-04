@@ -61,4 +61,65 @@ public class LoginAccessLog {
 
     @Column(name = "logout_at")
     private LocalDateTime logoutAt;
+
+    private LoginAccessLog(
+        Account account,
+        String attemptedLoginId,
+        boolean success,
+        LoginFailureReason failureReason,
+        String ipAddress,
+        String userAgent,
+        String sessionId,
+        LocalDateTime loginAt
+    ) {
+        this.account = account;
+        this.attemptedLoginId = attemptedLoginId;
+        this.success = success;
+        this.failureReason = failureReason;
+        this.ipAddress = ipAddress;
+        this.userAgent = userAgent;
+        this.sessionId = sessionId;
+        this.loginAt = loginAt;
+    }
+
+    public static LoginAccessLog success(
+            Account account,
+            String ipAddress,
+            String userAgent,
+            String sessionId
+    ) {
+        return new LoginAccessLog(
+            account,
+            account.getLoginId(),
+            true,
+            null,
+            ipAddress,
+            userAgent,
+            sessionId,
+            LocalDateTime.now()
+        );
+    }
+
+    public static LoginAccessLog failure(
+            Account account,
+            String attemptedLoginId,
+            LoginFailureReason failureReason,
+            String ipAddress,
+            String userAgent
+    ) {
+        return new LoginAccessLog(
+            account,
+            attemptedLoginId,
+            false,
+            failureReason,
+            ipAddress,
+            userAgent,
+            null,
+            LocalDateTime.now()
+        );
+    }
+
+    public void logout() {
+        this.logoutAt = LocalDateTime.now();
+    }
 }
