@@ -122,4 +122,6 @@ public class LoginAccessLog {
     public void logout() {
         this.logoutAt = LocalDateTime.now();
     }
+
+
 }

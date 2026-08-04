@@ -2,6 +2,7 @@ package com.example.backendlotte.account.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -21,5 +22,9 @@ public interface LoginAccessLogRepository
     long countByAttemptedLoginIdAndSuccessFalseAndLoginAtAfter(
         String attemptedLoginId,
         LocalDateTime after
+    );
+
+    Optional<LoginAccessLog> findFirstBySessionIdAndSuccessTrueAndLogoutAtIsNull(
+        String sessionId
     );
 }

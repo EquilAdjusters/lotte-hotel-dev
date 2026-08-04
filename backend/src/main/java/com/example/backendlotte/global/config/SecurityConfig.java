@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import com.example.backendlotte.auth.security.CustomAuthenticationEntryPoint;
 
 import com.example.backendlotte.auth.security.CustomUserDetailsService;
 
@@ -27,7 +28,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            AuthenticationProvider authenticationProvider
+            AuthenticationProvider authenticationProvider,
+            CustomAuthenticationEntryPoint authenticationEntryPoint
     ) throws Exception {
 
         http
@@ -38,6 +40,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(
                                 SessionCreationPolicy.IF_REQUIRED)
+                )
+
+                .exceptionHandling(exception -> exception
+                    .authenticationEntryPoint(authenticationEntryPoint)
                 )
 
                 .authorizeHttpRequests(auth -> auth

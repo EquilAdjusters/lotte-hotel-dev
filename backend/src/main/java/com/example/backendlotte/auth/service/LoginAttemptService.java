@@ -59,7 +59,7 @@ public class LoginAttemptService {
 
         if (accountId != null) {
             account = accountRepository.findById(accountId)
-                .orElse(null);
+                    .orElse(null);
 
             if (account != null) {
                 locked = account.loginFailed(maxFailures);
@@ -67,15 +67,20 @@ public class LoginAttemptService {
         }
 
         loginAccessLogRepository.save(
-            LoginAccessLog.failure(
-                account,
-                attemptedLoginId,
-                reason,
-                ipAddress,
-                userAgent
-            )
-        );
+                LoginAccessLog.failure(
+                        account,
+                        attemptedLoginId,
+                        reason,
+                        ipAddress,
+                        userAgent));
 
         return locked;
+    }
+    
+    @Transactional
+    public void recordLogout(String sessionId) {
+        loginAccessLogRepository
+            .findFirstBySessionIdAndSuccessTrueAndLogoutAtIsNull(sessionId)
+            .ifPresent(LoginAccessLog::logout);
     }
 }

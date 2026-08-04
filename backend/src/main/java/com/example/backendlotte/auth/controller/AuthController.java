@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.example.backendlotte.account.repository.AccountRepository;
 import com.example.backendlotte.auth.dto.LoginRequest;
@@ -53,8 +54,8 @@ public class AuthController {
             HttpServletResponse httpResponse
     ) {
         Account account = accountRepository
-            .findByLoginId(request.loginId())
-            .orElse(null);
+                .findByLoginId(request.loginId())
+                .orElse(null);
 
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
@@ -63,29 +64,23 @@ public class AuthController {
                 && !ipAccessService.isAllowed(account, ipAddress)) {
 
             loginAttemptService.recordFailure(
-                account.getId(),
-                request.loginId(),
-                LoginFailureReason.IP_NOT_ALLOWED,
-                ipAddress,
-                userAgent
-            );
+                    account.getId(),
+                    request.loginId(),
+                    LoginFailureReason.IP_NOT_ALLOWED,
+                    ipAddress,
+                    userAgent);
 
             return ipNotAllowedResponse();
         }
 
-
         try {
-            Authentication authentication =
-                authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     UsernamePasswordAuthenticationToken.unauthenticated(
-                        request.loginId(),
-                        request.password()
-                    )
-                );
+                            request.loginId(),
+                            request.password()));
 
             // 기존 세션이 있다면 제거하고 새 세션 발급
-            HttpSession existingSession =
-                httpRequest.getSession(false);
+            HttpSession existingSession = httpRequest.getSession(false);
 
             if (existingSession != null) {
                 existingSession.invalidate();
@@ -93,83 +88,73 @@ public class AuthController {
 
             HttpSession newSession = httpRequest.getSession(true);
 
-            SecurityContext context =
-                SecurityContextHolder.createEmptyContext();
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
 
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
 
             // 인증 정보를 HTTP 세션에 저장
             securityContextRepository.saveContext(
-                context,
-                httpRequest,
-                httpResponse
-            );
+                    context,
+                    httpRequest,
+                    httpResponse);
 
-            CustomUserDetails user =
-                    (CustomUserDetails) authentication.getPrincipal();
-                
+            CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+
             loginAttemptService.recordSuccess(
                     user.getAccountId(),
                     ipAddress,
                     userAgent,
-                    newSession.getId()
-            );
+                    newSession.getId());
 
             return ResponseEntity.ok(
-                new LoginResponse(
-                    user.getAccountId(),
-                    user.getUsername(),
-                    user.getDisplayName(),
-                    user.getRole(),
-                    user.getScopeType()
-                )
-            );
+                    new LoginResponse(
+                            user.getAccountId(),
+                            user.getUsername(),
+                            user.getDisplayName(),
+                            user.getRole(),
+                            user.getScopeType()));
 
         } catch (LockedException exception) {
             loginAttemptService.recordFailure(
-                account == null ? null : account.getId(),
-                request.loginId(),
-                LoginFailureReason.ACCOUNT_LOCKED,
-                ipAddress,
-                userAgent
-            );
+                    account == null ? null : account.getId(),
+                    request.loginId(),
+                    LoginFailureReason.ACCOUNT_LOCKED,
+                    ipAddress,
+                    userAgent);
 
             return lockedResponse();
 
         } catch (DisabledException exception) {
             loginAttemptService.recordFailure(
-                account == null ? null : account.getId(),
-                request.loginId(),
-                LoginFailureReason.ACCOUNT_INACTIVE,
-                ipAddress,
-                userAgent
-            );
+                    account == null ? null : account.getId(),
+                    request.loginId(),
+                    LoginFailureReason.ACCOUNT_INACTIVE,
+                    ipAddress,
+                    userAgent);
 
             return inactiveResponse();
         } catch (AccountExpiredException exception) {
 
             loginAttemptService.recordFailure(
-                account == null ? null : account.getId(),
-                request.loginId(),
-                LoginFailureReason.ACCOUNT_INACTIVE,
-                ipAddress,
-                userAgent
-            );
+                    account == null ? null : account.getId(),
+                    request.loginId(),
+                    LoginFailureReason.ACCOUNT_INACTIVE,
+                    ipAddress,
+                    userAgent);
 
             return inactiveResponse();
         } catch (BadCredentialsException exception) {
             LoginFailureReason reason = account == null
-                ? LoginFailureReason.ACCOUNT_NOT_FOUND
-                : LoginFailureReason.INVALID_PASSWORD;
+                    ? LoginFailureReason.ACCOUNT_NOT_FOUND
+                    : LoginFailureReason.INVALID_PASSWORD;
 
             boolean locked = loginAttemptService.recordFailure(
-                account == null ? null : account.getId(),
-                request.loginId(),
-                reason,
-                ipAddress,
-                userAgent
-            );
+                    account == null ? null : account.getId(),
+                    request.loginId(),
+                    reason,
+                    ipAddress,
+                    userAgent);
 
             if (locked) {
                 return lockedResponse();
@@ -177,6 +162,30 @@ public class AuthController {
 
             return unauthorizedResponse();
         }
+    }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(
+        HttpServletRequest request
+    ) {
+        HttpSession session = request.getSession(false);
+
+        if (session != null) {
+            String sessionId = session.getId();
+
+            loginAttemptService.recordLogout(sessionId);
+
+            session.invalidate();
+        }
+
+        SecurityContextHolder.clearContext();
+
+        return ResponseEntity.ok(
+            Map.of(
+                "code", "LOGOUT_SUCCESS",
+                "message", "로그아웃되었습니다."
+            )
+        );
     }
 
     @GetMapping("/me")
