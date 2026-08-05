@@ -67,4 +67,39 @@ public class AccountHistory {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private AccountHistory(
+        Account account,
+        Account actorAccount,
+        AccountHistoryType actionType,
+        String beforeValue,
+        String afterValue,
+        String description,
+        String actorIp
+    ) {
+        this.account = account;
+        this.actorAccount = actorAccount;
+        this.actionType = actionType;
+        this.beforeValue = beforeValue;
+        this.afterValue = afterValue;
+        this.description = description;
+        this.actorIp = actorIp;
+    }
+
+    public static AccountHistory created(
+            Account account,
+            Account actorAccount,
+            String afterValue,
+            String actorIp
+    ) {
+        return new AccountHistory(
+            account,
+            actorAccount,
+            AccountHistoryType.CREATED,
+            null,
+            afterValue,
+            "계정 발급",
+            actorIp
+        );
+    }
 }

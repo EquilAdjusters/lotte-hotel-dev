@@ -35,4 +35,39 @@ public class Branch extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    private Branch(
+            Hotel hotel,
+            String name
+    ) {
+        this.hotel = hotel;
+        this.name = name;
+        this.active = true;
+    }
+
+    public static Branch create(
+            Hotel hotel,
+            String name
+    ) {
+        return new Branch(
+            hotel,
+            name
+        );
+    }
+
+    public void update(
+            Hotel hotel,
+            String name
+    ) {
+        this.hotel = hotel;
+        this.name = name;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
 }

@@ -27,4 +27,25 @@ public class HotelCompany extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true; // 호텔사 실제 삭제가 아니라 사용 중지 처리하기 위한 값
+
+    private HotelCompany(String name) {
+    this.name = name;
+    this.active = true;
+    }
+
+    public static HotelCompany create(String name) {
+        return new HotelCompany(name);
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
 }

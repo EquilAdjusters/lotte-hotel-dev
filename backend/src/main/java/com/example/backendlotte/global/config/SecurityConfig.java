@@ -2,6 +2,7 @@ package com.example.backendlotte.global.config;
 import com.example.backendlotte.auth.security.ExpiredSessionFilter;
 import com.example.backendlotte.auth.security.RoleBasedConcurrentSessionStrategy;
 import com.example.backendlotte.auth.security.CustomUserDetailsService;
+import com.example.backendlotte.auth.security.CustomAuthenticationEntryPoint;
 
 import java.util.List;
 
@@ -27,9 +28,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
-import com.example.backendlotte.auth.security.CustomAuthenticationEntryPoint;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
     
     @Bean

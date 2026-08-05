@@ -27,4 +27,25 @@ public class BranchGroup extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    private BranchGroup(String name) {
+        this.name = name;
+        this.active = true;
+    }
+
+    public static BranchGroup create(String name) {
+        return new BranchGroup(name);
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
 }

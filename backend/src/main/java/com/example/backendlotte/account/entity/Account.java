@@ -134,6 +134,26 @@ public class Account extends BaseEntity {
                 false,
                 LocalDateTime.now());
     }
+
+    public static Account create(
+        String loginId,
+        String passwordHash,
+        String displayName,
+        Role role,
+        ScopeType scopeType,
+        boolean sharedAccount
+    ) {
+        return new Account(
+            loginId,
+            passwordHash,
+            displayName,
+            role,
+            scopeType,
+            AccountStatus.ACTIVE,
+            sharedAccount,
+            LocalDateTime.now()
+        );
+}
     
     public void loginSucceeded() {
         this.failedLoginCount = 0;
@@ -161,4 +181,6 @@ public class Account extends BaseEntity {
         this.failedLoginCount = 0;
         this.lockedAt = null;
     }
+
+    
 }
