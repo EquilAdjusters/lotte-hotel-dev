@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.example.backendlotte.account.repository.AccountRepository;
 import com.example.backendlotte.auth.dto.LoginRequest;
@@ -29,7 +29,6 @@ import com.example.backendlotte.auth.service.IpAccessService;
 import com.example.backendlotte.auth.service.LoginAttemptService;
 import com.example.backendlotte.account.entity.Account;
 import com.example.backendlotte.account.type.LoginFailureReason;
-import com.example.backendlotte.auth.service.IpAccessService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -46,6 +45,7 @@ public class AuthController {
     private final AccountRepository accountRepository;
     private final LoginAttemptService loginAttemptService;
     private final IpAccessService ipAccessService;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
@@ -85,6 +85,14 @@ public class AuthController {
             if (existingSession != null) {
                 existingSession.invalidate();
             }
+            
+            httpRequest.getSession(true);
+
+            sessionAuthenticationStrategy.onAuthentication(
+                    authentication,
+                    httpRequest,
+                    httpResponse
+                );
 
             HttpSession newSession = httpRequest.getSession(true);
 
@@ -97,7 +105,8 @@ public class AuthController {
             securityContextRepository.saveContext(
                     context,
                     httpRequest,
-                    httpResponse);
+                    httpResponse
+                );
 
             CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
 
@@ -105,7 +114,8 @@ public class AuthController {
                     user.getAccountId(),
                     ipAddress,
                     userAgent,
-                    newSession.getId());
+                    newSession.getId()
+                );
 
             return ResponseEntity.ok(
                     new LoginResponse(

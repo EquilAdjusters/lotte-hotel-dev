@@ -127,4 +127,22 @@ public class CustomUserDetails implements UserDetails {
     public Long getBranchGroupId() {
         return branchGroupId;
     }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+
+        if (!(object instanceof CustomUserDetails other)) {
+            return false;
+        }
+
+        return accountId != null && accountId.equals(other.accountId);
+    }
+
+    @Override
+    public int hashCode() {
+        return accountId == null ? 0 : accountId.hashCode();
+    }
 }
