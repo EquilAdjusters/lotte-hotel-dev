@@ -21,6 +21,8 @@ public class AccountService {
     private final AccountHistoryRepository accountHistoryRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
+    private final AccountAffiliationResolver accountAffiliationResolver;
+    
 
     @Transactional
     public AccountResponse createAccount(
@@ -46,14 +48,20 @@ public class AccountService {
 
         String passwordHash =
             passwordEncoder.encode(request.password());
-
+        
+        AccountAffiliationResolver.ResolvedAffiliation affiliation = accountAffiliationResolver.resolve(request);
+        
         Account account = Account.create(
             request.loginId(),
             passwordHash,
             request.displayName(),
             request.role(),
             request.scopeType(),
-            request.sharedAccount()
+            request.sharedAccount(),
+            affiliation.hotelCompany(),
+            affiliation.hotel(),
+            affiliation.branch(),
+            affiliation.branchGroup()
         );
 
         accountRepository.save(account);

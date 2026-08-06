@@ -1,4 +1,8 @@
 package com.example.backendlotte.account.entity;
+import com.example.backendlotte.hotel.entity.Hotel;
+import com.example.backendlotte.organization.entity.Branch;
+import com.example.backendlotte.organization.entity.BranchGroup;
+import com.example.backendlotte.organization.entity.HotelCompany;
 
 import java.time.LocalDateTime;
 
@@ -6,10 +10,6 @@ import com.example.backendlotte.account.type.AccountStatus;
 import com.example.backendlotte.account.type.Role;
 import com.example.backendlotte.account.type.ScopeType;
 import com.example.backendlotte.global.entity.BaseEntity;
-import com.example.backendlotte.hotel.entity.Hotel;
-import com.example.backendlotte.organization.entity.Branch;
-import com.example.backendlotte.organization.entity.BranchGroup;
-import com.example.backendlotte.organization.entity.HotelCompany;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -106,6 +106,10 @@ public class Account extends BaseEntity {
         ScopeType scopeType,
         AccountStatus status,
         boolean sharedAccount,
+        HotelCompany hotelCompany,
+        Hotel hotel,
+        Branch branch,
+        BranchGroup branchGroup,
         LocalDateTime passwordChangedAt
     ) {
         this.loginId = loginId;
@@ -115,24 +119,35 @@ public class Account extends BaseEntity {
         this.scopeType = scopeType;
         this.status = status;
         this.sharedAccount = sharedAccount;
+
+        this.hotelCompany = hotelCompany;
+        this.hotel = hotel;
+        this.branch = branch;
+        this.branchGroup = branchGroup;
+
         this.failedLoginCount = 0;
         this.passwordChangedAt = passwordChangedAt;
     }
 
-    public static Account createAdmin1 (
-        String loginId,
-        String passwordHash,
-        String displayName
+    public static Account createAdmin1(
+            String loginId,
+            String passwordHash,
+            String displayName
     ) {
         return new Account(
-                loginId,
-                passwordHash,
-                displayName,
-                Role.ADMIN1,
-                ScopeType.ALL,
-                AccountStatus.ACTIVE,
-                false,
-                LocalDateTime.now());
+            loginId,
+            passwordHash,
+            displayName,
+            Role.ADMIN1,
+            ScopeType.ALL,
+            AccountStatus.ACTIVE,
+            false,
+            null,
+            null,
+            null,
+            null,
+            LocalDateTime.now()
+        );
     }
 
     public static Account create(
@@ -141,7 +156,11 @@ public class Account extends BaseEntity {
         String displayName,
         Role role,
         ScopeType scopeType,
-        boolean sharedAccount
+        boolean sharedAccount,
+        HotelCompany hotelCompany,
+        Hotel hotel,
+        Branch branch,
+        BranchGroup branchGroup
     ) {
         return new Account(
             loginId,
@@ -151,9 +170,13 @@ public class Account extends BaseEntity {
             scopeType,
             AccountStatus.ACTIVE,
             sharedAccount,
+            hotelCompany,
+            hotel,
+            branch,
+            branchGroup,
             LocalDateTime.now()
         );
-}
+    }
     
     public void loginSucceeded() {
         this.failedLoginCount = 0;
@@ -182,5 +205,15 @@ public class Account extends BaseEntity {
         this.lockedAt = null;
     }
 
-    
+    public void updateAffiliation(
+        HotelCompany hotelCompany,
+        Hotel hotel,
+        Branch branch,
+        BranchGroup branchGroup
+    ) {
+        this.hotelCompany = hotelCompany;
+        this.hotel = hotel;
+        this.branch = branch;
+        this.branchGroup = branchGroup;
+    }
 }

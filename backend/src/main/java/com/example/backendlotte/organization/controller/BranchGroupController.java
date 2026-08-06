@@ -94,4 +94,5 @@ public class BranchGroupController {
     ) {
         return branchGroupService.activate(branchGroupId);
     }
+    
 }

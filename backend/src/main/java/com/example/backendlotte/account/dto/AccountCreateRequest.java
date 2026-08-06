@@ -9,6 +9,11 @@ public record AccountCreateRequest(
     String displayName,
     Role role,
     ScopeType scopeType,
-    boolean sharedAccount
+    boolean sharedAccount,
+
+    Long hotelCompanyId,
+    Long hotelId,
+    Long branchId,
+    Long branchGroupId
 ) {
 }

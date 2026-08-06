@@ -12,7 +12,19 @@ public record AccountResponse(
     Role role,
     ScopeType scopeType,
     AccountStatus status,
-    boolean sharedAccount
+    boolean sharedAccount,
+
+    Long hotelCompanyId,
+    String hotelCompanyName,
+
+    Long hotelId,
+    String hotelName,
+
+    Long branchId,
+    String branchName,
+
+    Long branchGroupId,
+    String branchGroupName
 ) {
 
     public static AccountResponse from(Account account) {
@@ -23,7 +35,39 @@ public record AccountResponse(
             account.getRole(),
             account.getScopeType(),
             account.getStatus(),
-            account.isSharedAccount()
+            account.isSharedAccount(),
+
+            account.getHotelCompany() == null
+                ? null
+                : account.getHotelCompany().getId(),
+
+            account.getHotelCompany() == null
+                ? null
+                : account.getHotelCompany().getName(),
+
+            account.getHotel() == null
+                ? null
+                : account.getHotel().getId(),
+
+            account.getHotel() == null
+                ? null
+                : account.getHotel().getName(),
+
+            account.getBranch() == null
+                ? null
+                : account.getBranch().getId(),
+
+            account.getBranch() == null
+                ? null
+                : account.getBranch().getName(),
+
+            account.getBranchGroup() == null
+                ? null
+                : account.getBranchGroup().getId(),
+
+            account.getBranchGroup() == null
+                ? null
+                : account.getBranchGroup().getName()
         );
     }
 }

@@ -3,8 +3,10 @@ package com.example.backendlotte.global.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import com.example.backendlotte.global.response.ErrorResponse;
@@ -62,11 +64,35 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException exception
     ) {
         return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
+                .status(HttpStatus.BAD_REQUEST)
+                .body(
+                        ErrorResponse.of(
+                                "INVALID_JSON",
+                                "요청값의 형식이 올바르지 않습니다."));
+    }
+    
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(
+                        ErrorResponse.of(
+                                "RESOURCE_NOT_FOUND",
+                                "요청한 API를 찾을 수 없습니다."));
+    }
+    
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException exception
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.METHOD_NOT_ALLOWED)
             .body(
                 ErrorResponse.of(
-                    "INVALID_JSON",
-                    "요청값의 형식이 올바르지 않습니다."
+                    "METHOD_NOT_ALLOWED",
+                    "허용되지 않은 요청 방식입니다."
                 )
             );
     }
