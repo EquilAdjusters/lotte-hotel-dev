@@ -34,4 +34,10 @@ public interface ClaimRepository extends JpaRepository<Claim, Long> {
     List<Claim> findAllByBranchIdOrderByCreatedAtDesc(
         Long branchId
     );
+
+    List<Claim> findAllByBranchIdAndVictimNameAndVictimBirthDateOrderByCreatedAtDesc(
+        Long branchId,
+        String victimName,
+        LocalDate victimBirthDate
+    );
 }

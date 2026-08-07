@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +22,12 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Component
+@ConditionalOnProperty(
+    prefix = "app.storage.s3",
+    name = "enabled",
+    havingValue = "false",
+    matchIfMissing = true
+)
 @RequiredArgsConstructor
 public class S3FileStorage implements FileStorage {
 

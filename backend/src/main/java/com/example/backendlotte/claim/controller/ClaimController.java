@@ -70,11 +70,14 @@ public class ClaimController {
     @PreAuthorize("hasRole('BRANCH_SHARED')")
     public List<ClaimDuplicateResponse> findDuplicates(
             @RequestParam String victimName,
-            @RequestParam LocalDate victimBirthDate
+            @RequestParam LocalDate victimBirthDate,
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
         return claimService.findDuplicates(
-                victimName,
-                victimBirthDate);
+            victimName,
+            victimBirthDate,
+            user.getAccountId()
+        );
     }
     
     @GetMapping("/{claimId}")

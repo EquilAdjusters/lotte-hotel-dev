@@ -316,22 +316,31 @@ public class Claim extends BaseEntity {
      * 외부 손사업체에서 전달받은 표준 종결 결과로 사고를 종결한다.
      */
     public void close(
-            ClaimClosingResult closingResult,
-            LocalDateTime closedAt
+        ClaimClosingResult closingResult,
+        LocalDateTime closedAt
     ) {
         if (this.status == ClaimStatus.CLOSED) {
             throw new IllegalStateException(
-                    "이미 종결된 사고입니다.");
+                "이미 종결된 사고입니다."
+            );
+        }
+
+        if (this.status != ClaimStatus.IN_PROGRESS) {
+            throw new IllegalStateException(
+                "진행중 상태인 사고만 종결할 수 있습니다."
+            );
         }
 
         if (closingResult == null) {
             throw new IllegalArgumentException(
-                    "종결 결과는 필수입니다.");
+                "종결 결과는 필수입니다."
+            );
         }
 
         if (closedAt == null) {
             throw new IllegalArgumentException(
-                    "종결 일시는 필수입니다.");
+                "종결 일시는 필수입니다."
+            );
         }
 
         this.status = ClaimStatus.CLOSED;

@@ -82,12 +82,14 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ErrorResponse> handleIllegalStateException(
                 IllegalStateException exception
         ) {
-                return ResponseEntity
-                                .status(HttpStatus.CONFLICT)
-                                .body(
-                                                ErrorResponse.of(
-                                                                "INVALID_ACCOUNT_STATE",
-                                                                exception.getMessage()));
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(
+                ErrorResponse.of(
+                        "INVALID_STATE",
+                        exception.getMessage()
+                )
+                );
         }
         
         @ExceptionHandler(MethodArgumentNotValidException.class)

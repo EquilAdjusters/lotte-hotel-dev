@@ -152,10 +152,10 @@ public class ClaimService {
     @Transactional(readOnly = true)
     public List<ClaimDuplicateResponse> findDuplicates(
             String victimName,
-            java.time.LocalDate victimBirthDate
+            java.time.LocalDate victimBirthDate,
+            Long accountId
     ) {
-        if (victimName == null
-                || victimName.isBlank()) {
+        if (victimName == null || victimName.isBlank()) {
             throw new IllegalArgumentException(
                 "피해자명은 필수입니다."
             );
@@ -167,8 +167,14 @@ public class ClaimService {
             );
         }
 
+        ClaimAccessContext context =
+            claimAccessContextResolver.resolveForCreate(
+                accountId
+            );
+
         return claimRepository
-            .findAllByVictimNameAndVictimBirthDateOrderByCreatedAtDesc(
+            .findAllByBranchIdAndVictimNameAndVictimBirthDateOrderByCreatedAtDesc(
+                context.branch().getId(),
                 victimName.trim(),
                 victimBirthDate
             )
@@ -183,6 +189,10 @@ public class ClaimService {
         validateVictimLanguage(
             request.victimType(),
             request.preferredLanguage()
+        );
+
+        validateAccidentDescription(
+            request.accidentDescription()
         );
 
         if (request.consent() == null) {
@@ -264,7 +274,18 @@ public class ClaimService {
 
         validateVictimLanguage(
                 request.victimType(),
-                request.preferredLanguage());
+                request.preferredLanguage()
+        );
+        
+        validateAccidentDescription(
+            request.accidentDescription()
+        );
+
+        if (request.consent() == null) {
+            throw new IllegalArgumentException(
+                "개인정보 동의 정보는 필수입니다."
+            );
+        }
 
         String beforeValue = buildClaimSnapshot(
                 claim,
@@ -304,7 +325,13 @@ public class ClaimService {
         );
         
         String afterConsentValue =
-            buildConsentSnapshot(consent);
+                buildConsentSnapshot(consent);
+        
+        if (beforeValue.equals(afterValue)) {
+            throw new IllegalArgumentException(
+                "변경된 내용이 없습니다."
+            );
+        }
 
         claimHistoryRepository.save(
                 ClaimHistory.updatedByUser(
@@ -423,15 +450,31 @@ public class ClaimService {
         ClaimConsent consent
     ) {
         return """
-            {
-            "consentStatus": "%s",
-            "consentObtainedAt": "%s",
-            "consentMethod": "%s"
-            }
-            """.formatted(
+                {
+                "consentStatus": "%s",
+                "consentObtainedAt": "%s",
+                "consentMethod": "%s"
+                }
+                """.formatted(
                 consent.getConsentStatus(),
                 consent.getConsentObtainedAt(),
-                consent.getConsentMethod()
+                consent.getConsentMethod());
+    }
+    
+    private void validateAccidentDescription(
+        String accidentDescription
+    ) {
+        if (accidentDescription == null
+                || accidentDescription.isBlank()) {
+            throw new IllegalArgumentException(
+                "사고경위는 필수입니다."
             );
+        }
+
+        if (accidentDescription.trim().length() > 200) {
+            throw new IllegalArgumentException(
+                "사고경위는 200자 이하로 입력해주세요."
+            );
+        }
     }
 }

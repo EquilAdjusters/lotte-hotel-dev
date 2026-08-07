@@ -120,6 +120,12 @@ public class ClaimConsent extends BaseEntity {
      * 현장 동의 미취득 상태로 변경한다.
      */
     public void markNotObtained() {
+        if (this.consentStatus == ConsentStatus.OBTAINED) {
+            throw new IllegalStateException(
+                "이미 취득된 개인정보 동의는 미취득 상태로 변경할 수 없습니다."
+            );
+        }
+
         this.consentStatus = ConsentStatus.NOT_OBTAINED;
         this.consentObtainedAt = null;
         this.consentMethod = null;
