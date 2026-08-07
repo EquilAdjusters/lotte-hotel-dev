@@ -10,6 +10,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import com.example.backendlotte.storage.FileStorageException;
 import com.example.backendlotte.global.response.ErrorResponse;
 import com.example.backendlotte.global.response.ValidationErrorResponse;
 
@@ -129,14 +130,33 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ErrorResponse>
                 handleNoResourceFoundException(
                 NoResourceFoundException exception
+        ) {
+
+                return ResponseEntity
+                                .status(HttpStatus.NOT_FOUND)
+                                .body(
+                                                ErrorResponse.of(
+                                                                "RESOURCE_NOT_FOUND",
+                                                                "요청한 API를 찾을 수 없습니다."));
+        }
+        
+        @ExceptionHandler(FileStorageException.class)
+        public ResponseEntity<ErrorResponse>
+                handleFileStorageException(
+                FileStorageException exception
                 ) {
 
+        log.error(
+                "파일 저장소 처리 오류",
+                exception
+        );
+
         return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(
                 ErrorResponse.of(
-                        "RESOURCE_NOT_FOUND",
-                        "요청한 API를 찾을 수 없습니다."
+                        "FILE_STORAGE_ERROR",
+                        "파일 처리 중 오류가 발생했습니다."
                 )
                 );
         }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.example.backendlotte.claim.dto.ClaimCreateRequest;
 import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
@@ -13,6 +14,10 @@ import com.example.backendlotte.claim.entity.ClaimConsent;
 import com.example.backendlotte.claim.repository.ClaimConsentRepository;
 import com.example.backendlotte.claim.repository.ClaimRepository;
 import com.example.backendlotte.claim.type.VictimType;
+import com.example.backendlotte.claim.entity.ClaimHistory;
+import com.example.backendlotte.claim.repository.ClaimHistoryRepository;
+import com.example.backendlotte.claim.type.ClaimStatus;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +30,7 @@ public class ClaimService {
 
     private final ClaimNumberGenerator claimNumberGenerator;
     private final ClaimAccessContextResolver claimAccessContextResolver;
+    private final ClaimHistoryRepository claimHistoryRepository;
 
     /**
      * 사고접수
@@ -76,6 +82,18 @@ public class ClaimService {
 
         claimRepository.save(claim);
 
+        /*
+        * 최초 접수 생성 이력
+        *
+        * 이 시점의 상태는 RECEIVED다.
+        */
+        claimHistoryRepository.save(
+            ClaimHistory.created(
+                claim,
+                context.account()
+            )
+        );
+
         // 5. 개인정보 동의 증적 생성
         ClaimConsent consent =
             ClaimConsent.create(
@@ -88,12 +106,22 @@ public class ClaimService {
         claimConsentRepository.save(consent);
 
         /*
-         * 현재 요구사항:
-         * 접수 완료 후 사고현황에는 '진행중'으로 표시.
-         *
-         * 문자 발송 자체는 이후 별도 후처리 구조로 분리한다.
-         */
+        * 접수 후 기본 후처리가 완료된 것으로 보고
+        * RECEIVED → IN_PROGRESS로 변경한다.
+        */
+        ClaimStatus previousStatus =
+            claim.getStatus();
+
         claim.startProcessing();
+
+        claimHistoryRepository.save(
+            ClaimHistory.statusChangedBySystem(
+                claim,
+                previousStatus,
+                claim.getStatus(),
+                "접수 완료 후 진행중 상태로 자동 변경"
+            )
+        );
 
         return ClaimResponse.from(
             claim,
@@ -177,7 +205,45 @@ public class ClaimService {
         String trimmed = value.trim();
 
         return trimmed.isEmpty()
-            ? null
-            : trimmed;
+                ? null
+                : trimmed;
+    }
+    
+    @Transactional(readOnly = true)
+    public ClaimResponse findOne(
+            Long claimId,
+            Long accountId
+    ) {
+        ClaimAccessContext context =
+            claimAccessContextResolver.resolveForCreate(accountId);
+
+        Claim claim = claimRepository
+            .findById(claimId)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "접수건을 찾을 수 없습니다."
+                )
+            );
+
+        if (!claim.getBranch().getId()
+                .equals(context.branch().getId())) {
+            throw new AccessDeniedException(
+                "다른 지점의 접수건은 조회할 수 없습니다."
+            );
+        }
+
+        ClaimConsent consent =
+            claimConsentRepository
+                .findByClaimId(claimId)
+                .orElseThrow(() ->
+                    new IllegalStateException(
+                        "접수건의 개인정보 동의 정보를 찾을 수 없습니다."
+                    )
+                );
+
+        return ClaimResponse.from(
+            claim,
+            consent
+        );
     }
 }

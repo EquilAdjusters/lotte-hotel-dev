@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,8 +66,19 @@ public class ClaimController {
             @RequestParam LocalDate victimBirthDate
     ) {
         return claimService.findDuplicates(
-            victimName,
-            victimBirthDate
+                victimName,
+                victimBirthDate);
+    }
+    
+    @GetMapping("/{claimId}")
+    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    public ClaimResponse findOne(
+            @PathVariable Long claimId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return claimService.findOne(
+            claimId,
+            user.getAccountId()
         );
     }
 }
