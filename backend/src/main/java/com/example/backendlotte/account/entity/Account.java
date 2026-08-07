@@ -216,4 +216,30 @@ public class Account extends BaseEntity {
         this.branch = branch;
         this.branchGroup = branchGroup;
     }
+
+    public void updateProfile(
+        String displayName,
+        Role role,
+        ScopeType scopeType,
+        boolean sharedAccount,
+        HotelCompany hotelCompany,
+        Hotel hotel,
+        Branch branch,
+        BranchGroup branchGroup
+    ) {
+        this.displayName = displayName;
+        this.role = role;
+        this.scopeType = scopeType;
+        this.sharedAccount = sharedAccount;
+
+        this.hotelCompany = hotelCompany;
+        this.hotel = hotel;
+        this.branch = branch;
+        this.branchGroup = branchGroup;
+    }
+
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
+        this.passwordChangedAt = LocalDateTime.now();
+    }
 }

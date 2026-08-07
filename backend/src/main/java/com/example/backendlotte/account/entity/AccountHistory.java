@@ -93,12 +93,60 @@ public class AccountHistory {
             String actorIp
     ) {
         return new AccountHistory(
+                account,
+                actorAccount,
+                AccountHistoryType.CREATED,
+                null,
+                afterValue,
+                "계정 발급",
+                actorIp);
+    }
+    
+    public static AccountHistory updated(
+        Account account,
+        Account actorAccount,
+        String beforeValue,
+        String afterValue,
+        String actorIp
+    ) {
+        return new AccountHistory(
+                account,
+                actorAccount,
+                AccountHistoryType.UPDATED,
+                beforeValue,
+                afterValue,
+                "계정 정보 수정",
+                actorIp);
+    }
+    
+    public static AccountHistory passwordChanged(
+        Account account,
+        Account actorAccount,
+        String actorIp
+    ) {
+        return new AccountHistory(
             account,
             actorAccount,
-            AccountHistoryType.CREATED,
+            AccountHistoryType.PASSWORD_CHANGED,
             null,
-            afterValue,
-            "계정 발급",
+            null,
+            "본인 비밀번호 변경",
+            actorIp
+        );
+    }
+
+    public static AccountHistory passwordReset(
+            Account account,
+            Account actorAccount,
+            String actorIp
+    ) {
+        return new AccountHistory(
+            account,
+            actorAccount,
+            AccountHistoryType.PASSWORD_RESET,
+            null,
+            null,
+            "관리자 비밀번호 초기화",
             actorIp
         );
     }

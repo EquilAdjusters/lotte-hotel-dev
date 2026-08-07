@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.backendlotte.account.dto.AccountCreateRequest;
-import com.example.backendlotte.account.type.Role;
 import com.example.backendlotte.account.type.ScopeType;
 import com.example.backendlotte.hotel.entity.Hotel;
 import com.example.backendlotte.hotel.repository.HotelRepository;
@@ -14,6 +13,7 @@ import com.example.backendlotte.organization.entity.HotelCompany;
 import com.example.backendlotte.organization.repository.BranchGroupRepository;
 import com.example.backendlotte.organization.repository.BranchRepository;
 import com.example.backendlotte.organization.repository.HotelCompanyRepository;
+import com.example.backendlotte.account.dto.AccountUpdateRequest;
 
 import lombok.RequiredArgsConstructor;
 
@@ -329,18 +329,166 @@ public class AccountAffiliationResolver {
     }
 
     public record ResolvedAffiliation(
-        HotelCompany hotelCompany,
-        Hotel hotel,
-        Branch branch,
-        BranchGroup branchGroup
-    ) {
+            HotelCompany hotelCompany,
+            Hotel hotel,
+            Branch branch,
+            BranchGroup branchGroup) {
 
         public static ResolvedAffiliation empty() {
             return new ResolvedAffiliation(
+                    null,
+                    null,
+                    null,
+                    null);
+        }
+    }
+    
+    @Transactional(readOnly = true)
+    public ResolvedAffiliation resolve(
+            AccountUpdateRequest request
+    ) {
+        if (request.role() == null) {
+            throw new IllegalArgumentException(
+                    "역할은 필수입니다.");
+        }
+
+        return switch (request.role()) {
+            case ADMIN1 -> resolveAdmin1(request);
+            case ADMIN2 -> resolveAdmin2(request);
+            case ADMIN3 -> resolveAdmin3(request);
+            case BRANCH_SHARED -> resolveBranchShared(request);
+            case ADMIN4 -> resolveAdmin4(request);
+        };
+    }
+    
+    private ResolvedAffiliation resolveAdmin1(
+        AccountUpdateRequest request
+    ) {
+        requireScopeType(request.scopeType(), ScopeType.ALL);
+        requireSharedAccount(request.sharedAccount(), false);
+        requireAllAffiliationIdsNull(request);
+
+        return ResolvedAffiliation.empty();
+    }
+
+    private ResolvedAffiliation resolveAdmin2(
+            AccountUpdateRequest request
+    ) {
+        if (request.scopeType() != ScopeType.ALL
+                && request.scopeType() != ScopeType.ASSIGNED) {
+            throw new IllegalArgumentException(
+                "ADMIN2의 조회 범위는 ALL 또는 ASSIGNED여야 합니다."
+            );
+        }
+
+        requireSharedAccount(request.sharedAccount(), false);
+        requireAllAffiliationIdsNull(request);
+
+        return ResolvedAffiliation.empty();
+    }
+
+    private ResolvedAffiliation resolveAdmin3(
+            AccountUpdateRequest request
+    ) {
+        requireScopeType(request.scopeType(), ScopeType.HOTEL);
+        requireSharedAccount(request.sharedAccount(), false);
+
+        if (request.hotelCompanyId() == null) {
+            throw new IllegalArgumentException(
+                "ADMIN3 계정은 호텔사 ID가 필수입니다."
+            );
+        }
+
+        if (request.hotelId() != null
+                || request.branchId() != null
+                || request.branchGroupId() != null) {
+            throw new IllegalArgumentException(
+                "ADMIN3 계정에는 호텔사 외의 소속을 지정할 수 없습니다."
+            );
+        }
+
+        HotelCompany hotelCompany =
+            findActiveHotelCompany(request.hotelCompanyId());
+
+        return new ResolvedAffiliation(
+            hotelCompany,
+            null,
+            null,
+            null
+        );
+    }
+
+    private ResolvedAffiliation resolveBranchShared(
+            AccountUpdateRequest request
+    ) {
+        requireScopeType(request.scopeType(), ScopeType.BRANCH);
+        requireSharedAccount(request.sharedAccount(), true);
+
+        if (request.branchId() == null) {
+            throw new IllegalArgumentException(
+                "지점 공유계정은 지점 ID가 필수입니다."
+            );
+        }
+
+        if (request.hotelCompanyId() != null
+                || request.hotelId() != null
+                || request.branchGroupId() != null) {
+            throw new IllegalArgumentException(
+                "지점 공유계정은 branchId만 지정해야 합니다."
+            );
+        }
+
+        Branch branch = findActiveBranch(request.branchId());
+        Hotel hotel = branch.getHotel();
+        HotelCompany hotelCompany = hotel.getHotelCompany();
+
+        return new ResolvedAffiliation(
+            hotelCompany,
+            hotel,
+            branch,
+            null
+        );
+    }
+
+    private ResolvedAffiliation resolveAdmin4(
+            AccountUpdateRequest request
+    ) {
+        requireScopeType(
+                request.scopeType(),
+                ScopeType.BRANCH_GROUP);
+
+        requireSharedAccount(request.sharedAccount(), true);
+
+        if (request.branchGroupId() == null) {
+            throw new IllegalArgumentException(
+                    "ADMIN4 계정은 권역 그룹 ID가 필수입니다.");
+        }
+
+        if (request.hotelCompanyId() != null
+                || request.hotelId() != null
+                || request.branchId() != null) {
+            throw new IllegalArgumentException(
+                    "ADMIN4 계정에는 권역 그룹만 지정할 수 있습니다.");
+        }
+
+        BranchGroup branchGroup = findActiveBranchGroup(request.branchGroupId());
+
+        return new ResolvedAffiliation(
                 null,
                 null,
                 null,
-                null
+                branchGroup);
+    }
+    
+    private void requireAllAffiliationIdsNull(
+        AccountUpdateRequest request
+    ) {
+        if (request.hotelCompanyId() != null
+                || request.hotelId() != null
+                || request.branchId() != null
+                || request.branchGroupId() != null) {
+            throw new IllegalArgumentException(
+                "해당 역할에는 조직 소속을 지정할 수 없습니다."
             );
         }
     }

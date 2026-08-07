@@ -1,0 +1,17 @@
+package com.example.backendlotte.account.dto;
+
+import com.example.backendlotte.account.type.Role;
+import com.example.backendlotte.account.type.ScopeType;
+
+public record AccountUpdateRequest(
+    String displayName,
+    Role role,
+    ScopeType scopeType,
+    boolean sharedAccount,
+
+    Long hotelCompanyId,
+    Long hotelId,
+    Long branchId,
+    Long branchGroupId
+) {
+}
