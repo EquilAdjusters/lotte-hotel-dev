@@ -1,0 +1,72 @@
+package com.example.backendlotte.claim.controller;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.backendlotte.auth.security.CustomUserDetails;
+import com.example.backendlotte.claim.dto.ClaimCreateRequest;
+import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
+import com.example.backendlotte.claim.dto.ClaimResponse;
+import com.example.backendlotte.claim.service.ClaimService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/claims")
+@RequiredArgsConstructor
+public class ClaimController {
+
+    private final ClaimService claimService;
+
+    /**
+     * 사고접수
+     *
+     * 현재 접수 화면은 지점 공유계정 전용이다.
+     * Service의 ClaimAccessContextResolver에서도 동일하게 재검증한다.
+     */
+    @PostMapping
+    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    public ResponseEntity<ClaimResponse> createClaim(
+            @Valid @RequestBody ClaimCreateRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        ClaimResponse response =
+            claimService.createClaim(
+                request,
+                user.getAccountId()
+            );
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(response);
+    }
+
+    /**
+     * 피해자명 + 생년월일 기준 중복 의심 접수 조회
+     *
+     * 결과가 있어도 신규 접수를 차단하지 않는다.
+     */
+    @GetMapping("/duplicates")
+    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    public List<ClaimDuplicateResponse> findDuplicates(
+            @RequestParam String victimName,
+            @RequestParam LocalDate victimBirthDate
+    ) {
+        return claimService.findDuplicates(
+            victimName,
+            victimBirthDate
+        );
+    }
+}
