@@ -321,24 +321,60 @@ public class Claim extends BaseEntity {
     ) {
         if (this.status == ClaimStatus.CLOSED) {
             throw new IllegalStateException(
-                "이미 종결된 사고입니다."
-            );
+                    "이미 종결된 사고입니다.");
         }
 
         if (closingResult == null) {
             throw new IllegalArgumentException(
-                "종결 결과는 필수입니다."
-            );
+                    "종결 결과는 필수입니다.");
         }
 
         if (closedAt == null) {
             throw new IllegalArgumentException(
-                "종결 일시는 필수입니다."
-            );
+                    "종결 일시는 필수입니다.");
         }
 
         this.status = ClaimStatus.CLOSED;
         this.closingResult = closingResult;
         this.closedAt = closedAt;
+    }
+    
+    public void update(
+        String victimName,
+        String victimPhone,
+        LocalDate victimBirthDate,
+        VictimType victimType,
+        PreferredLanguage preferredLanguage,
+        String residenceSido,
+        String residenceSigungu,
+        String residenceDetail,
+        ClaimType claimType,
+        LocalDateTime accidentAt,
+        String accidentDescription,
+        String receivedByName,
+        String receivedByExtension
+    ) {
+        if (this.status == ClaimStatus.CLOSED) {
+            throw new IllegalStateException(
+                "종결된 접수건은 수정할 수 없습니다."
+            );
+        }
+
+        this.victimName = victimName;
+        this.victimPhone = victimPhone;
+        this.victimBirthDate = victimBirthDate;
+        this.victimType = victimType;
+        this.preferredLanguage = preferredLanguage;
+
+        this.residenceSido = residenceSido;
+        this.residenceSigungu = residenceSigungu;
+        this.residenceDetail = residenceDetail;
+
+        this.claimType = claimType;
+        this.accidentAt = accidentAt;
+        this.accidentDescription = accidentDescription;
+
+        this.receivedByName = receivedByName;
+        this.receivedByExtension = receivedByExtension;
     }
 }

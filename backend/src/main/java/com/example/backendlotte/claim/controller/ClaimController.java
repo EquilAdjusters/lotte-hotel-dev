@@ -8,17 +8,24 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 
+import com.example.backendlotte.claim.dto.ClaimHistoryResponse;
 import com.example.backendlotte.auth.security.CustomUserDetails;
 import com.example.backendlotte.claim.dto.ClaimCreateRequest;
 import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
 import com.example.backendlotte.claim.dto.ClaimResponse;
+import com.example.backendlotte.claim.dto.ClaimUpdateRequest;
 import com.example.backendlotte.claim.service.ClaimService;
 
 import jakarta.validation.Valid;
@@ -77,8 +84,42 @@ public class ClaimController {
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return claimService.findOne(
+                claimId,
+                user.getAccountId());
+    }
+    
+    @PatchMapping("/{claimId}")
+    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    public ClaimResponse updateClaim(
+            @PathVariable Long claimId,
+            @Valid @RequestBody ClaimUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return claimService.updateClaim(
+                claimId,
+                request,
+                user.getAccountId());
+    }
+    
+    @GetMapping("/{claimId}/histories")
+    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    public Page<ClaimHistoryResponse> findHistories(
+            @PathVariable Long claimId,
+
+            @PageableDefault(
+                size = 20,
+                sort = "createdAt",
+                direction = Sort.Direction.DESC
+            )
+            Pageable pageable,
+
+            @AuthenticationPrincipal
+            CustomUserDetails user
+    ) {
+        return claimService.findHistories(
             claimId,
-            user.getAccountId()
+            user.getAccountId(),
+            pageable
         );
     }
 }

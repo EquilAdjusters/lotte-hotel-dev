@@ -6,5 +6,6 @@ public enum ClaimHistoryType {
     CLOSED,             // 종결 처리
     CONSENT_UPDATED,    // 개인정보 동의 정보 변경
     ASSIGNED,
-    REASSIGNED
+    REASSIGNED,
+    UPDATED,
 }

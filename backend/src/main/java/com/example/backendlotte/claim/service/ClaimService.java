@@ -4,8 +4,16 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import com.example.backendlotte.claim.dto.ClaimHistoryResponse;
+import com.example.backendlotte.claim.event.ClaimCreatedEvent;
+import com.example.backendlotte.claim.type.PreferredLanguage;
+import com.example.backendlotte.claim.dto.ClaimUpdateRequest;
+import com.example.backendlotte.claim.type.ConsentStatus;
 import com.example.backendlotte.claim.dto.ClaimCreateRequest;
 import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
 import com.example.backendlotte.claim.dto.ClaimResponse;
@@ -31,6 +39,7 @@ public class ClaimService {
     private final ClaimNumberGenerator claimNumberGenerator;
     private final ClaimAccessContextResolver claimAccessContextResolver;
     private final ClaimHistoryRepository claimHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 사고접수
@@ -123,6 +132,12 @@ public class ClaimService {
             )
         );
 
+        eventPublisher.publishEvent(
+            new ClaimCreatedEvent(
+                claim.getId()
+            )
+        );
+
         return ClaimResponse.from(
             claim,
             consent
@@ -165,29 +180,11 @@ public class ClaimService {
     private void validateCreateRequest(
             ClaimCreateRequest request
     ) {
-        /*
-         * 외국인만 사용 가능 언어를 선택한다.
-         */
-        if (request.victimType() == VictimType.DOMESTIC
-                && request.preferredLanguage() != null) {
+        validateVictimLanguage(
+            request.victimType(),
+            request.preferredLanguage()
+        );
 
-            throw new IllegalArgumentException(
-                "내국인은 사용 가능 언어를 선택할 수 없습니다."
-            );
-        }
-
-        if (request.victimType() == VictimType.FOREIGNER
-                && request.preferredLanguage() == null) {
-
-            throw new IllegalArgumentException(
-                "외국인은 사용 가능 언어를 선택해야 합니다."
-            );
-        }
-
-        /*
-         * ClaimConsent에서도 검증하지만,
-         * Service에서도 업무 규칙을 명확하게 검사한다.
-         */
         if (request.consent() == null) {
             throw new IllegalArgumentException(
                 "개인정보 동의 정보는 필수입니다."
@@ -214,36 +211,227 @@ public class ClaimService {
             Long claimId,
             Long accountId
     ) {
-        ClaimAccessContext context =
-            claimAccessContextResolver.resolveForCreate(accountId);
+        ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(accountId);
 
         Claim claim = claimRepository
-            .findById(claimId)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "접수건을 찾을 수 없습니다."
-                )
-            );
+                .findById(claimId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "접수건을 찾을 수 없습니다."));
 
         if (!claim.getBranch().getId()
                 .equals(context.branch().getId())) {
             throw new AccessDeniedException(
-                "다른 지점의 접수건은 조회할 수 없습니다."
+                    "다른 지점의 접수건은 조회할 수 없습니다.");
+        }
+
+        ClaimConsent consent = claimConsentRepository
+                .findByClaimId(claimId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "접수건의 개인정보 동의 정보를 찾을 수 없습니다."));
+
+        return ClaimResponse.from(
+                claim,
+                consent);
+    }
+    
+    @Transactional
+    public ClaimResponse updateClaim(
+            Long claimId,
+            ClaimUpdateRequest request,
+            Long accountId
+    ) {
+        ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(
+                accountId);
+
+        Claim claim = claimRepository
+                .findById(claimId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "접수건을 찾을 수 없습니다."));
+
+        // 다른 지점 사고 수정 차단
+        if (!claim.getBranch()
+                .getId()
+                .equals(context.branch().getId())) {
+
+            throw new AccessDeniedException(
+                    "다른 지점의 접수건은 수정할 수 없습니다.");
+        }
+
+        ClaimConsent consent = claimConsentRepository
+                .findByClaimId(claimId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "접수건의 개인정보 동의 정보를 찾을 수 없습니다."));
+
+        validateVictimLanguage(
+                request.victimType(),
+                request.preferredLanguage());
+
+        String beforeValue = buildClaimSnapshot(
+                claim,
+                consent);
+        String beforeConsentValue =
+                buildConsentSnapshot(consent);
+    
+        claim.update(
+                request.victimName().trim(),
+                request.victimPhone().trim(),
+                request.victimBirthDate(),
+                request.victimType(),
+                request.preferredLanguage(),
+                request.residenceSido().trim(),
+                request.residenceSigungu().trim(),
+                trimToNull(request.residenceDetail()),
+                request.claimType(),
+                request.accidentAt(),
+                request.accidentDescription().trim(),
+                request.receivedByName().trim(),
+                request.receivedByExtension().trim());
+
+        // 개인정보 동의 정보도 같이 수정
+        if (request.consent().consentStatus() == ConsentStatus.OBTAINED) {
+
+            consent.obtainConsent(
+                    request.consent().consentObtainedAt(),
+                    request.consent().consentMethod());
+
+        } else {
+            consent.markNotObtained();
+        }
+
+        String afterValue = buildClaimSnapshot(
+                claim,
+                consent
+        );
+        
+        String afterConsentValue =
+            buildConsentSnapshot(consent);
+
+        claimHistoryRepository.save(
+                ClaimHistory.updatedByUser(
+                        claim,
+                        context.account(),
+                        beforeValue,
+                        afterValue));
+        
+        if (!beforeConsentValue.equals(afterConsentValue)) {
+            claimHistoryRepository.save(
+                ClaimHistory.consentUpdatedByUser(
+                    claim,
+                    context.account(),
+                    beforeConsentValue,
+                    afterConsentValue
+                )
             );
         }
 
-        ClaimConsent consent =
-            claimConsentRepository
-                .findByClaimId(claimId)
-                .orElseThrow(() ->
-                    new IllegalStateException(
-                        "접수건의 개인정보 동의 정보를 찾을 수 없습니다."
-                    )
-                );
-
         return ClaimResponse.from(
-            claim,
-            consent
-        );
+                claim,
+                consent);
+    }
+    
+    private void validateVictimLanguage(
+        VictimType victimType,
+        PreferredLanguage preferredLanguage
+    ) {
+        if (victimType == VictimType.DOMESTIC
+                && preferredLanguage != null) {
+
+            throw new IllegalArgumentException(
+                    "내국인은 사용 가능 언어를 선택할 수 없습니다.");
+        }
+
+        if (victimType == VictimType.FOREIGNER
+                && preferredLanguage == null) {
+
+            throw new IllegalArgumentException(
+                    "외국인은 사용 가능 언어를 선택해야 합니다.");
+        }
+    }
+    
+    private String buildClaimSnapshot(
+            Claim claim,
+            ClaimConsent consent
+    ) {
+        return """
+                {
+                "victimName": "%s",
+                "victimPhone": "%s",
+                "victimBirthDate": "%s",
+                "victimType": "%s",
+                "preferredLanguage": "%s",
+                "residenceSido": "%s",
+                "residenceSigungu": "%s",
+                "residenceDetail": "%s",
+                "claimType": "%s",
+                "accidentAt": "%s",
+                "accidentDescription": "%s",
+                "receivedByName": "%s",
+                "receivedByExtension": "%s",
+                "consentStatus": "%s",
+                "consentObtainedAt": "%s",
+                "consentMethod": "%s"
+                }
+                """.formatted(
+                claim.getVictimName(),
+                claim.getVictimPhone(),
+                claim.getVictimBirthDate(),
+                claim.getVictimType(),
+                claim.getPreferredLanguage(),
+                claim.getResidenceSido(),
+                claim.getResidenceSigungu(),
+                claim.getResidenceDetail(),
+                claim.getClaimType(),
+                claim.getAccidentAt(),
+                claim.getAccidentDescription(),
+                claim.getReceivedByName(),
+                claim.getReceivedByExtension(),
+                consent.getConsentStatus(),
+                consent.getConsentObtainedAt(),
+                consent.getConsentMethod());
+    }
+    
+    @Transactional(readOnly = true)
+    public Page<ClaimHistoryResponse> findHistories(
+            Long claimId,
+            Long accountId,
+            Pageable pageable
+    ) {
+        ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(
+                accountId);
+
+        Claim claim = claimRepository
+                .findById(claimId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "접수건을 찾을 수 없습니다."));
+
+        if (!claim.getBranch()
+                .getId()
+                .equals(context.branch().getId())) {
+
+            throw new AccessDeniedException(
+                    "다른 지점의 접수건 이력은 조회할 수 없습니다.");
+        }
+
+        return claimHistoryRepository
+                .findByClaimId(
+                        claimId,
+                        pageable)
+                .map(ClaimHistoryResponse::from);
+    }
+    
+    private String buildConsentSnapshot(
+        ClaimConsent consent
+    ) {
+        return """
+            {
+            "consentStatus": "%s",
+            "consentObtainedAt": "%s",
+            "consentMethod": "%s"
+            }
+            """.formatted(
+                consent.getConsentStatus(),
+                consent.getConsentObtainedAt(),
+                consent.getConsentMethod()
+            );
     }
 }

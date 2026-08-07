@@ -80,6 +80,18 @@ public class ClaimHistory {
     private ClaimClosingResult closingResult;
 
     @Column(
+        name = "previous_value",
+        columnDefinition = "TEXT"
+    )
+    private String previousValue;
+
+    @Column(
+        name = "current_value",
+        columnDefinition = "TEXT"
+    )
+    private String currentValue;
+
+    @Column(
         name = "description",
         nullable = false,
         length = 500
@@ -102,6 +114,8 @@ public class ClaimHistory {
             ClaimStatus previousStatus,
             ClaimStatus currentStatus,
             ClaimClosingResult closingResult,
+            String previousValue,
+            String currentValue,
             String description
     ) {
         this.claim = claim;
@@ -111,6 +125,8 @@ public class ClaimHistory {
         this.previousStatus = previousStatus;
         this.currentStatus = currentStatus;
         this.closingResult = closingResult;
+        this.previousValue = previousValue;
+        this.currentValue = currentValue;
         this.description = description;
     }
 
@@ -138,6 +154,8 @@ public class ClaimHistory {
             null,
             ClaimStatus.RECEIVED,
             null,
+            null,
+            null,
             "사고접수 생성"
         );
     }
@@ -161,6 +179,8 @@ public class ClaimHistory {
             ClaimHistorySource.SYSTEM,
             previousStatus,
             currentStatus,
+            null,
+            null,
             null,
             normalizeDescription(description)
         );
@@ -198,6 +218,8 @@ public class ClaimHistory {
             previousStatus,
             ClaimStatus.CLOSED,
             closingResult,
+            null,
+            null,
             normalizeDescription(description)
         );
     }
@@ -233,18 +255,94 @@ public class ClaimHistory {
         if (description == null
                 || description.isBlank()) {
             throw new IllegalArgumentException(
-                "이력 설명은 필수입니다."
-            );
+                    "이력 설명은 필수입니다.");
         }
 
         String normalized = description.trim();
 
         if (normalized.length() > 500) {
             throw new IllegalArgumentException(
-                "이력 설명은 500자 이하로 입력해주세요."
-            );
+                    "이력 설명은 500자 이하로 입력해주세요.");
         }
 
         return normalized;
+    }
+    
+    public static ClaimHistory updatedByUser(
+        Claim claim,
+        Account actorAccount,
+        String previousValue,
+        String currentValue
+    ) {
+        if (claim == null) {
+            throw new IllegalArgumentException(
+                    "접수건 정보는 필수입니다.");
+        }
+
+        if (actorAccount == null) {
+            throw new IllegalArgumentException(
+                    "수정 계정 정보는 필수입니다.");
+        }
+
+        if (previousValue == null || currentValue == null) {
+            throw new IllegalArgumentException(
+                    "수정 전·후 정보는 필수입니다.");
+        }
+
+        return new ClaimHistory(
+                claim,
+                actorAccount,
+                ClaimHistoryType.UPDATED,
+                ClaimHistorySource.USER,
+                claim.getStatus(),
+                claim.getStatus(),
+                null,
+                previousValue,
+                currentValue,
+                "사고접수 정보 수정");
+    }
+    
+    public static ClaimHistory consentUpdatedByUser(
+        Claim claim,
+        Account actorAccount,
+        String previousValue,
+        String currentValue
+    ) {
+        if (claim == null) {
+            throw new IllegalArgumentException(
+                "접수건 정보는 필수입니다."
+            );
+        }
+
+        if (actorAccount == null) {
+            throw new IllegalArgumentException(
+                "수정 계정 정보는 필수입니다."
+            );
+        }
+
+        if (previousValue == null
+                || currentValue == null) {
+            throw new IllegalArgumentException(
+                "동의 정보 변경 전·후 값은 필수입니다."
+            );
+        }
+
+        return new ClaimHistory(
+            claim,
+            actorAccount,
+            ClaimHistoryType.CONSENT_UPDATED,
+            ClaimHistorySource.USER,
+
+            // 사고 진행상태 자체는 변경하지 않음
+            claim.getStatus(),
+            claim.getStatus(),
+
+            null,
+
+            previousValue,
+            currentValue,
+
+            "개인정보 동의 정보 수정"
+        );
     }
 }
