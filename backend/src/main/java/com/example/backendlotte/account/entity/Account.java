@@ -200,6 +200,11 @@ public class Account extends BaseEntity {
     }
 
     public void unlock() {
+        if (this.status != AccountStatus.LOCKED) {
+            throw new IllegalStateException(
+                    "잠긴 계정만 잠금 해제할 수 있습니다.");
+        }
+
         this.status = AccountStatus.ACTIVE;
         this.failedLoginCount = 0;
         this.lockedAt = null;
@@ -241,5 +246,49 @@ public class Account extends BaseEntity {
     public void changePassword(String passwordHash) {
         this.passwordHash = passwordHash;
         this.passwordChangedAt = LocalDateTime.now();
+    }
+    
+    public void deactivate() {
+        if (this.status == AccountStatus.DELETED) {
+            throw new IllegalStateException(
+                "삭제된 계정은 비활성화할 수 없습니다."
+            );
+        }
+
+        if (this.status == AccountStatus.INACTIVE) {
+            throw new IllegalStateException(
+                "이미 비활성화된 계정입니다."
+            );
+        }
+
+        this.status = AccountStatus.INACTIVE;
+    }
+
+    public void activate() {
+        if (this.status == AccountStatus.DELETED) {
+            throw new IllegalStateException(
+                    "삭제된 계정은 활성화할 수 없습니다.");
+        }
+
+        if (this.status != AccountStatus.INACTIVE) {
+            throw new IllegalStateException(
+                    "비활성화된 계정만 활성화할 수 있습니다.");
+        }
+
+        this.status = AccountStatus.ACTIVE;
+        this.failedLoginCount = 0;
+        this.lockedAt = null;
+    }
+    
+    public void delete() {
+        if (this.status == AccountStatus.DELETED) {
+            throw new IllegalStateException(
+                "이미 삭제된 계정입니다."
+            );
+        }
+
+        this.status = AccountStatus.DELETED;
+        this.failedLoginCount = 0;
+        this.lockedAt = null;
     }
 }

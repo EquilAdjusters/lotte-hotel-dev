@@ -21,6 +21,7 @@ import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 
+import com.example.backendlotte.account.type.AccountStatus;
 import com.example.backendlotte.account.repository.AccountRepository;
 import com.example.backendlotte.auth.dto.LoginRequest;
 import com.example.backendlotte.auth.dto.LoginResponse;
@@ -156,15 +157,16 @@ public class AuthController {
             return inactiveResponse();
         } catch (BadCredentialsException exception) {
             LoginFailureReason reason = account == null
-                    ? LoginFailureReason.ACCOUNT_NOT_FOUND
-                    : LoginFailureReason.INVALID_PASSWORD;
+                ? LoginFailureReason.ACCOUNT_NOT_FOUND
+                : LoginFailureReason.INVALID_PASSWORD;
 
             boolean locked = loginAttemptService.recordFailure(
-                    account == null ? null : account.getId(),
-                    request.loginId(),
-                    reason,
-                    ipAddress,
-                    userAgent);
+                account == null ? null : account.getId(),
+                request.loginId(),
+                reason,
+                ipAddress,
+                userAgent
+            );
 
             if (locked) {
                 return lockedResponse();
@@ -247,10 +249,10 @@ public class AuthController {
 
     private ResponseEntity<Map<String, String>> ipNotAllowedResponse() {
         return ResponseEntity
-            .status(HttpStatus.FORBIDDEN)
-            .body(Map.of(
-                "code", "IP_NOT_ALLOWED",
-                "message", "허용되지 않은 접속 위치입니다. 관리자에게 문의해주세요."
-            ));
+                .status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                        "code", "IP_NOT_ALLOWED",
+                        "message", "허용되지 않은 접속 위치입니다. 관리자에게 문의해주세요."));
     }
+    
 }

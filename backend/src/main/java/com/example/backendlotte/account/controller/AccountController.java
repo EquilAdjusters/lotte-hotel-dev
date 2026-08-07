@@ -9,10 +9,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +27,7 @@ import com.example.backendlotte.account.dto.AccountSearchCondition;
 import com.example.backendlotte.account.type.AccountStatus;
 import com.example.backendlotte.account.type.Role;
 import com.example.backendlotte.account.dto.AccountCreateRequest;
+import com.example.backendlotte.account.dto.AccountHistoryResponse;
 import com.example.backendlotte.account.dto.AccountResponse;
 import com.example.backendlotte.account.service.AccountService;
 import com.example.backendlotte.auth.security.CustomUserDetails;
@@ -46,7 +50,7 @@ public class AccountController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN1')")
     public ResponseEntity<AccountResponse> createAccount(
-            @RequestBody AccountCreateRequest request,
+            @Valid @RequestBody AccountCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails user,
             HttpServletRequest httpRequest
     ) {
@@ -129,7 +133,7 @@ public class AccountController {
     @PreAuthorize("hasRole('ADMIN1')")
     public AccountResponse updateAccount(
             @PathVariable Long accountId,
-            @RequestBody AccountUpdateRequest request,
+            @Valid @RequestBody AccountUpdateRequest request,
             @AuthenticationPrincipal CustomUserDetails user,
             HttpServletRequest httpRequest
     ) {
@@ -143,7 +147,7 @@ public class AccountController {
     @PatchMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> changeMyPassword(
-            @RequestBody MyPasswordChangeRequest request,
+            @Valid @RequestBody MyPasswordChangeRequest request,
             @AuthenticationPrincipal CustomUserDetails user,
             HttpServletRequest httpRequest
     ) {
@@ -170,22 +174,96 @@ public class AccountController {
     @PreAuthorize("hasRole('ADMIN1')")
     public ResponseEntity<Map<String, String>> resetPassword(
             @PathVariable Long accountId,
-            @RequestBody AccountPasswordResetRequest request,
+            @Valid @RequestBody AccountPasswordResetRequest request,
             @AuthenticationPrincipal CustomUserDetails user,
             HttpServletRequest httpRequest
     ) {
         accountService.resetPassword(
-            accountId,
-            request,
-            user.getAccountId(),
-            getClientIp(httpRequest)
-        );
+                accountId,
+                request,
+                user.getAccountId(),
+                getClientIp(httpRequest));
 
         return ResponseEntity.ok(
-            Map.of(
-                "code", "PASSWORD_RESET",
-                "message", "비밀번호가 초기화되었습니다."
-            )
+                Map.of(
+                        "code", "PASSWORD_RESET",
+                        "message", "비밀번호가 초기화되었습니다."));
+    }
+    
+    @PatchMapping("/{accountId}/unlock")
+    @PreAuthorize("hasRole('ADMIN1')")
+    public AccountResponse unlockAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpServletRequest httpRequest
+    ) {
+        return accountService.unlockAccount(
+                accountId,
+                user.getAccountId(),
+                getClientIp(httpRequest));
+    }
+    
+    @PatchMapping("/{accountId}/deactivate")
+    @PreAuthorize("hasRole('ADMIN1')")
+    public AccountResponse deactivateAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpServletRequest httpRequest
+    ) {
+        return accountService.deactivateAccount(
+                accountId,
+                user.getAccountId(),
+                getClientIp(httpRequest));
+    }
+    
+    @PatchMapping("/{accountId}/activate")
+    @PreAuthorize("hasRole('ADMIN1')")
+    public AccountResponse activateAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpServletRequest httpRequest
+    ) {
+        return accountService.activateAccount(
+                accountId,
+                user.getAccountId(),
+                getClientIp(httpRequest));
+    }
+    
+    @DeleteMapping("/{accountId}")
+    @PreAuthorize("hasRole('ADMIN1')")
+    public ResponseEntity<Map<String, String>> deleteAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpServletRequest httpRequest
+    ) {
+        accountService.deleteAccount(
+                accountId,
+                user.getAccountId(),
+                getClientIp(httpRequest));
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "code", "ACCOUNT_DELETED",
+                        "message", "계정이 삭제되었습니다."));
+    }
+    
+    @GetMapping("/{accountId}/histories")
+    @PreAuthorize("hasRole('ADMIN1')")
+    public Page<AccountHistoryResponse> findAccountHistories(
+        @PathVariable Long accountId,
+        @PageableDefault(
+                size = 20,
+                sort = "createdAt",
+                direction = Sort.Direction.DESC
+        )
+        Pageable pageable
+        ) {
+        return accountService.findAccountHistories(
+        accountId,
+        pageable
         );
     }
+    
+    
+    
 }

@@ -6,9 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.backendlotte.account.entity.Account;
 import com.example.backendlotte.account.entity.LoginAccessLog;
+import com.example.backendlotte.account.repository.AccountHistoryRepository;
 import com.example.backendlotte.account.repository.AccountRepository;
 import com.example.backendlotte.account.repository.LoginAccessLogRepository;
+import com.example.backendlotte.account.type.AccountStatus;
 import com.example.backendlotte.account.type.LoginFailureReason;
+import com.example.backendlotte.account.entity.AccountHistory;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +21,7 @@ public class LoginAttemptService {
 
     private final AccountRepository accountRepository;
     private final LoginAccessLogRepository loginAccessLogRepository;
+    private final AccountHistoryRepository accountHistoryRepository;
 
     @Value("${app.security.login.max-failures:5}")
     private int maxFailures;
@@ -55,26 +59,44 @@ public class LoginAttemptService {
             String userAgent
     ) {
         Account account = null;
-        boolean locked = false;
+        boolean newlyLocked = false;
 
         if (accountId != null) {
-            account = accountRepository.findById(accountId)
-                    .orElse(null);
+            account = accountRepository
+                .findById(accountId)
+                .orElse(null);
 
             if (account != null) {
-                locked = account.loginFailed(maxFailures);
+                boolean wasLocked =
+                    account.getStatus() == AccountStatus.LOCKED;
+
+                boolean locked =
+                    account.loginFailed(maxFailures);
+
+                newlyLocked = !wasLocked && locked;
+
+                if (newlyLocked) {
+                    accountHistoryRepository.save(
+                        AccountHistory.locked(
+                            account,
+                            ipAddress
+                        )
+                    );
+                }
             }
         }
 
         loginAccessLogRepository.save(
-                LoginAccessLog.failure(
-                        account,
-                        attemptedLoginId,
-                        reason,
-                        ipAddress,
-                        userAgent));
+            LoginAccessLog.failure(
+                account,
+                attemptedLoginId,
+                reason,
+                ipAddress,
+                userAgent
+            )
+        );
 
-        return locked;
+        return newlyLocked;
     }
     
     @Transactional

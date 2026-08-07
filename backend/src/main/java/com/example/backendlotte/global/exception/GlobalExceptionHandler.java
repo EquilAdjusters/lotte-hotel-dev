@@ -8,8 +8,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import com.example.backendlotte.global.response.ErrorResponse;
+import com.example.backendlotte.global.response.ValidationErrorResponse;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,29 +76,68 @@ public class GlobalExceptionHandler {
                                 "요청값의 형식이 올바르지 않습니다."));
     }
     
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoResourceFound(
-            NoResourceFoundException exception
-    ) {
+    
+    @ExceptionHandler(IllegalStateException.class)
+        public ResponseEntity<ErrorResponse> handleIllegalStateException(
+                IllegalStateException exception
+        ) {
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(
+                                                ErrorResponse.of(
+                                                                "INVALID_ACCOUNT_STATE",
+                                                                exception.getMessage()));
+        }
+        
+        @ExceptionHandler(MethodArgumentNotValidException.class)
+        public ResponseEntity<ValidationErrorResponse>
+                handleMethodArgumentNotValidException(
+                MethodArgumentNotValidException exception
+        ) {
+
+                Map<String, String> errors = new LinkedHashMap<>();
+
+                exception.getBindingResult()
+                                .getFieldErrors()
+                                .forEach(fieldError -> errors.putIfAbsent(
+                                                fieldError.getField(),
+                                                fieldError.getDefaultMessage()));
+
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(
+                                                ValidationErrorResponse.of(errors));
+        }
+        
+        @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+        public ResponseEntity<ErrorResponse>
+                handleMethodNotSupportedException(
+                HttpRequestMethodNotSupportedException exception
+                ) {
+
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(
+                ErrorResponse.of(
+                        "METHOD_NOT_ALLOWED",
+                        "허용되지 않은 요청 방식입니다."
+                )
+                );
+        }
+        
+        @ExceptionHandler(NoResourceFoundException.class)
+        public ResponseEntity<ErrorResponse>
+                handleNoResourceFoundException(
+                NoResourceFoundException exception
+                ) {
+
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(
-                        ErrorResponse.of(
-                                "RESOURCE_NOT_FOUND",
-                                "요청한 API를 찾을 수 없습니다."));
-    }
-    
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
-            HttpRequestMethodNotSupportedException exception
-    ) {
-        return ResponseEntity
-            .status(HttpStatus.METHOD_NOT_ALLOWED)
-            .body(
                 ErrorResponse.of(
-                    "METHOD_NOT_ALLOWED",
-                    "허용되지 않은 요청 방식입니다."
+                        "RESOURCE_NOT_FOUND",
+                        "요청한 API를 찾을 수 없습니다."
                 )
-            );
-    }
+                );
+        }
 }

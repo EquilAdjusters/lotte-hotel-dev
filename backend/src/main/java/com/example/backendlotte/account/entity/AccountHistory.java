@@ -141,12 +141,90 @@ public class AccountHistory {
             String actorIp
     ) {
         return new AccountHistory(
+                account,
+                actorAccount,
+                AccountHistoryType.PASSWORD_RESET,
+                null,
+                null,
+                "관리자 비밀번호 초기화",
+                actorIp);
+    }
+    
+    public static AccountHistory unlocked(
+        Account account,
+        Account actorAccount,
+        String actorIp
+    ) {
+        return new AccountHistory(
+                account,
+                actorAccount,
+                AccountHistoryType.UNLOCKED,
+                "LOCKED",
+                "ACTIVE",
+                "계정 잠금 해제",
+                actorIp);
+    }
+    
+    public static AccountHistory locked(
+        Account account,
+        String actorIp
+    ) {
+        return new AccountHistory(
+            account,
+            null,
+            AccountHistoryType.LOCKED,
+            "ACTIVE",
+            "LOCKED",
+            "비밀번호 5회 실패로 계정 잠금",
+            actorIp
+        );
+    }
+
+    public static AccountHistory deactivated(
+            Account account,
+            Account actorAccount,
+            String beforeStatus,
+            String actorIp
+    ) {
+        return new AccountHistory(
             account,
             actorAccount,
-            AccountHistoryType.PASSWORD_RESET,
-            null,
-            null,
-            "관리자 비밀번호 초기화",
+            AccountHistoryType.DEACTIVATED,
+            beforeStatus,
+            "INACTIVE",
+            "계정 사용 중지",
+            actorIp
+        );
+    }
+
+    public static AccountHistory activated(
+            Account account,
+            Account actorAccount,
+            String actorIp
+    ) {
+        return new AccountHistory(
+                account,
+                actorAccount,
+                AccountHistoryType.ACTIVATED,
+                "INACTIVE",
+                "ACTIVE",
+                "계정 사용 재개",
+                actorIp);
+    }
+    
+    public static AccountHistory deleted(
+        Account account,
+        Account actorAccount,
+        String beforeStatus,
+        String actorIp
+    ) {
+        return new AccountHistory(
+            account,
+            actorAccount,
+            AccountHistoryType.DELETED,
+            beforeStatus,
+            "DELETED",
+            "계정 삭제",
             actorIp
         );
     }

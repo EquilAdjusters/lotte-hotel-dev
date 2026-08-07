@@ -11,5 +11,7 @@ public enum AccountHistoryType {
     LOCKED,
     UNLOCKED,
     DELETED,
-    UPDATED
+    UPDATED,
+    ACTIVATED,
+    DEACTIVATED
 }
