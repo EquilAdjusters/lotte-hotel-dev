@@ -8,20 +8,26 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import com.example.backendlotte.claim.dto.ClaimHistoryResponse;
+import com.example.backendlotte.claim.dto.ClaimListResponse;
 import com.example.backendlotte.claim.event.ClaimCreatedEvent;
 import com.example.backendlotte.claim.type.PreferredLanguage;
 import com.example.backendlotte.claim.dto.ClaimUpdateRequest;
 import com.example.backendlotte.claim.type.ConsentStatus;
+import com.example.backendlotte.account.type.Role;
 import com.example.backendlotte.claim.dto.ClaimCreateRequest;
 import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
 import com.example.backendlotte.claim.dto.ClaimResponse;
+import com.example.backendlotte.claim.dto.ClaimSearchCondition;
 import com.example.backendlotte.claim.entity.Claim;
 import com.example.backendlotte.claim.entity.ClaimConsent;
 import com.example.backendlotte.claim.repository.ClaimConsentRepository;
 import com.example.backendlotte.claim.repository.ClaimRepository;
+import com.example.backendlotte.claim.specification.ClaimSpecification;
 import com.example.backendlotte.claim.type.VictimType;
+import com.example.backendlotte.organization.repository.BranchGroupMemberRepository;
 import com.example.backendlotte.claim.entity.ClaimHistory;
 import com.example.backendlotte.claim.repository.ClaimHistoryRepository;
 import com.example.backendlotte.claim.type.ClaimStatus;
@@ -40,6 +46,31 @@ public class ClaimService {
     private final ClaimAccessContextResolver claimAccessContextResolver;
     private final ClaimHistoryRepository claimHistoryRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final BranchGroupMemberRepository branchGroupMemberRepository;
+
+    private void validateSearchPeriod(
+        ClaimSearchCondition condition
+    ) {
+        if (condition.receivedFrom() != null
+                && condition.receivedTo() != null
+                && condition.receivedFrom()
+                    .isAfter(condition.receivedTo())) {
+
+            throw new IllegalArgumentException(
+                "접수일자 시작일은 종료일보다 늦을 수 없습니다."
+            );
+        }
+
+        if (condition.accidentFrom() != null
+                && condition.accidentTo() != null
+                && condition.accidentFrom()
+                    .isAfter(condition.accidentTo())) {
+
+            throw new IllegalArgumentException(
+                "사고일자 시작일은 종료일보다 늦을 수 없습니다."
+            );
+        }
+    }
 
     /**
      * 사고접수
@@ -157,30 +188,134 @@ public class ClaimService {
     ) {
         if (victimName == null || victimName.isBlank()) {
             throw new IllegalArgumentException(
-                "피해자명은 필수입니다."
-            );
+                    "피해자명은 필수입니다.");
         }
 
         if (victimBirthDate == null) {
             throw new IllegalArgumentException(
-                "생년월일은 필수입니다."
-            );
+                    "생년월일은 필수입니다.");
         }
 
-        ClaimAccessContext context =
-            claimAccessContextResolver.resolveForCreate(
+        ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(
+                accountId);
+
+        return claimRepository
+                .findAllByBranchIdAndVictimNameAndVictimBirthDateOrderByCreatedAtDesc(
+                        context.branch().getId(),
+                        victimName.trim(),
+                        victimBirthDate)
+                .stream()
+                .map(ClaimDuplicateResponse::from)
+                .toList();
+    }
+    
+    @Transactional(readOnly = true)
+    public Page<ClaimListResponse> findClaims(
+            ClaimSearchCondition condition,
+            Long accountId,
+            Pageable pageable
+    ) {
+        ClaimSearchAccessContext context =
+            claimAccessContextResolver.resolveForSearch(
                 accountId
             );
 
+        validateSearchPeriod(condition);
+
+        Specification<Claim> spec =
+            Specification.allOf(
+                ClaimSpecification.receivedBetween(
+                    condition.receivedFrom(),
+                    condition.receivedTo()
+                ),
+                ClaimSpecification.accidentBetween(
+                    condition.accidentFrom(),
+                    condition.accidentTo()
+                ),
+                ClaimSpecification.progressStatusEquals(
+                    condition.progressStatus()
+                ),
+                ClaimSpecification.receivedByNameContains(
+                    condition.receivedByName()
+                ),
+                ClaimSpecification.victimNameContains(
+                    condition.victimName()
+                )
+            );
+
+        Role role = context.account().getRole();
+
+        switch (role) {
+
+            case ADMIN1, ADMIN2 -> {
+                // 전체 조회
+            }
+
+            case ADMIN3 -> {
+                if (context.hotel() == null) {
+                    throw new IllegalStateException(
+                        "ADMIN3 계정에 호텔 소속이 설정되어 있지 않습니다."
+                    );
+                }
+
+                spec = spec.and(
+                    ClaimSpecification.hotelIdEquals(
+                        context.hotel().getId()
+                    )
+                );
+            }
+
+            case ADMIN4 -> {
+                if (context.branchGroup() == null) {
+                    throw new IllegalStateException(
+                        "ADMIN4 계정에 관리 그룹이 설정되어 있지 않습니다."
+                    );
+                }
+
+                List<Long> branchIds =
+                    branchGroupMemberRepository
+                        .findAllByBranchGroupId(
+                            context.branchGroup().getId()
+                        )
+                        .stream()
+                        .map(member ->
+                            member.getBranch().getId()
+                        )
+                        .toList();
+
+                spec = spec.and(
+                    ClaimSpecification.branchIdIn(
+                        branchIds
+                    )
+                );
+            }
+
+            case BRANCH_SHARED -> {
+                if (context.branch() == null) {
+                    throw new IllegalStateException(
+                        "지점 공유계정에 지점 소속이 설정되어 있지 않습니다."
+                    );
+                }
+
+                spec = spec.and(
+                    ClaimSpecification.branchIdEquals(
+                        context.branch().getId()
+                    )
+                );
+            }
+
+            default ->
+                throw new AccessDeniedException(
+                    "사고현황을 조회할 권한이 없습니다."
+                );
+        }
+
         return claimRepository
-            .findAllByBranchIdAndVictimNameAndVictimBirthDateOrderByCreatedAtDesc(
-                context.branch().getId(),
-                victimName.trim(),
-                victimBirthDate
+            .findAll(
+                spec,
+                pageable
             )
-            .stream()
-            .map(ClaimDuplicateResponse::from)
-            .toList();
+            .map(ClaimListResponse::from);
     }
 
     private void validateCreateRequest(
@@ -221,27 +356,37 @@ public class ClaimService {
             Long claimId,
             Long accountId
     ) {
-        ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(accountId);
+        ClaimSearchAccessContext context =
+            claimAccessContextResolver.resolveForSearch(
+                accountId
+            );
 
         Claim claim = claimRepository
-                .findById(claimId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "접수건을 찾을 수 없습니다."));
+            .findById(claimId)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "접수건을 찾을 수 없습니다."
+                )
+            );
 
-        if (!claim.getBranch().getId()
-                .equals(context.branch().getId())) {
-            throw new AccessDeniedException(
-                    "다른 지점의 접수건은 조회할 수 없습니다.");
-        }
+        validateReadAccess(
+            context,
+            claim
+        );
 
-        ClaimConsent consent = claimConsentRepository
+        ClaimConsent consent =
+            claimConsentRepository
                 .findByClaimId(claimId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "접수건의 개인정보 동의 정보를 찾을 수 없습니다."));
+                .orElseThrow(() ->
+                    new IllegalStateException(
+                        "접수건의 개인정보 동의 정보를 찾을 수 없습니다."
+                    )
+                );
 
         return ClaimResponse.from(
-                claim,
-                consent);
+            claim,
+            consent
+        );
     }
     
     @Transactional
@@ -423,27 +568,30 @@ public class ClaimService {
             Long accountId,
             Pageable pageable
     ) {
-        ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(
-                accountId);
+        ClaimSearchAccessContext context =
+            claimAccessContextResolver.resolveForSearch(
+                accountId
+            );
 
         Claim claim = claimRepository
-                .findById(claimId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "접수건을 찾을 수 없습니다."));
+            .findById(claimId)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "접수건을 찾을 수 없습니다."
+                )
+            );
 
-        if (!claim.getBranch()
-                .getId()
-                .equals(context.branch().getId())) {
-
-            throw new AccessDeniedException(
-                    "다른 지점의 접수건 이력은 조회할 수 없습니다.");
-        }
+        validateReadAccess(
+            context,
+            claim
+        );
 
         return claimHistoryRepository
-                .findByClaimId(
-                        claimId,
-                        pageable)
-                .map(ClaimHistoryResponse::from);
+            .findByClaimId(
+                claimId,
+                pageable
+            )
+            .map(ClaimHistoryResponse::from);
     }
     
     private String buildConsentSnapshot(
@@ -467,14 +615,86 @@ public class ClaimService {
         if (accidentDescription == null
                 || accidentDescription.isBlank()) {
             throw new IllegalArgumentException(
-                "사고경위는 필수입니다."
-            );
+                    "사고경위는 필수입니다.");
         }
 
         if (accidentDescription.trim().length() > 200) {
             throw new IllegalArgumentException(
-                "사고경위는 200자 이하로 입력해주세요."
-            );
+                    "사고경위는 200자 이하로 입력해주세요.");
+        }
+    }
+    
+    private void validateReadAccess(
+            ClaimSearchAccessContext context,
+            Claim claim
+    ) {
+        Role role = context.account().getRole();
+
+        switch (role) {
+
+            case ADMIN1, ADMIN2 -> {
+                // 전체 조회 가능
+            }
+
+            case ADMIN3 -> {
+                if (context.hotel() == null) {
+                    throw new IllegalStateException(
+                        "ADMIN3 계정에 호텔 소속이 설정되어 있지 않습니다."
+                    );
+                }
+
+                if (!claim.getHotel()
+                        .getId()
+                        .equals(context.hotel().getId())) {
+
+                    throw new AccessDeniedException(
+                        "소속 호텔의 사고만 조회할 수 있습니다."
+                    );
+                }
+            }
+
+            case ADMIN4 -> {
+                if (context.branchGroup() == null) {
+                    throw new IllegalStateException(
+                        "ADMIN4 계정에 관리 그룹이 설정되어 있지 않습니다."
+                    );
+                }
+
+                boolean accessible =
+                    branchGroupMemberRepository
+                        .existsByBranchGroupIdAndBranchId(
+                            context.branchGroup().getId(),
+                            claim.getBranch().getId()
+                        );
+
+                if (!accessible) {
+                    throw new AccessDeniedException(
+                        "관리 범위에 포함된 지점의 사고만 조회할 수 있습니다."
+                    );
+                }
+            }
+
+            case BRANCH_SHARED -> {
+                if (context.branch() == null) {
+                    throw new IllegalStateException(
+                        "지점 공유계정에 지점 소속이 설정되어 있지 않습니다."
+                    );
+                }
+
+                if (!claim.getBranch()
+                        .getId()
+                        .equals(context.branch().getId())) {
+
+                    throw new AccessDeniedException(
+                        "다른 지점의 사고는 조회할 수 없습니다."
+                    );
+                }
+            }
+
+            default ->
+                throw new AccessDeniedException(
+                    "사고현황을 조회할 권한이 없습니다."
+                );
         }
     }
 }

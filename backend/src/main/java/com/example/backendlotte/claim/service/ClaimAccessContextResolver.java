@@ -137,28 +137,58 @@ public class ClaimAccessContextResolver {
     ) {
         if (account.getHotelCompany() == null
                 || !account.getHotelCompany()
-                    .getId()
-                    .equals(hotelCompany.getId())) {
+                        .getId()
+                        .equals(hotelCompany.getId())) {
             throw new IllegalStateException(
-                "계정의 호텔사 소속 정보가 지점 정보와 일치하지 않습니다."
-            );
+                    "계정의 호텔사 소속 정보가 지점 정보와 일치하지 않습니다.");
         }
 
         if (account.getHotel() == null
                 || !account.getHotel()
-                    .getId()
-                    .equals(hotel.getId())) {
+                        .getId()
+                        .equals(hotel.getId())) {
             throw new IllegalStateException(
-                "계정의 호텔 소속 정보가 지점 정보와 일치하지 않습니다."
-            );
+                    "계정의 호텔 소속 정보가 지점 정보와 일치하지 않습니다.");
         }
 
         if (!account.getBranch()
                 .getId()
                 .equals(branch.getId())) {
             throw new IllegalStateException(
-                "계정의 지점 소속 정보가 올바르지 않습니다."
+                    "계정의 지점 소속 정보가 올바르지 않습니다.");
+        }
+    }
+    
+    @Transactional(readOnly = true)
+    public ClaimSearchAccessContext resolveForSearch(
+            Long accountId
+    ) {
+        if (accountId == null) {
+            throw new IllegalArgumentException(
+                "로그인 계정 정보가 없습니다."
             );
         }
+
+        Account account = accountRepository
+            .findById(accountId)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "로그인 계정을 찾을 수 없습니다."
+                )
+            );
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new IllegalStateException(
+                "활성 상태인 계정만 사고현황을 조회할 수 있습니다."
+            );
+        }
+
+        return new ClaimSearchAccessContext(
+            account,
+            account.getHotelCompany(),
+            account.getHotel(),
+            account.getBranch(),
+            account.getBranchGroup()
+        );
     }
 }

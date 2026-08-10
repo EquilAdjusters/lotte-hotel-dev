@@ -3,7 +3,7 @@ package com.example.backendlotte.storage.s3;
 import java.time.Duration;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+// import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.s3.S3Client;
     name = "enabled",
     havingValue = "true"
 )
-@EnableConfigurationProperties(S3StorageProperties.class)
+// @EnableConfigurationProperties(S3StorageProperties.class)
 public class S3Config {
 
     @Bean

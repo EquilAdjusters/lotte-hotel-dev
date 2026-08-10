@@ -27,6 +27,8 @@ import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
 import com.example.backendlotte.claim.dto.ClaimResponse;
 import com.example.backendlotte.claim.dto.ClaimUpdateRequest;
 import com.example.backendlotte.claim.service.ClaimService;
+import com.example.backendlotte.claim.dto.ClaimListResponse;
+import com.example.backendlotte.claim.dto.ClaimSearchCondition;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,15 +52,37 @@ public class ClaimController {
             @Valid @RequestBody ClaimCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        ClaimResponse response =
-            claimService.createClaim(
+        ClaimResponse response = claimService.createClaim(
                 request,
-                user.getAccountId()
-            );
+                user.getAccountId());
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(response);
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+    
+    @GetMapping
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3', 'ADMIN4', 'BRANCH_SHARED')"
+    )
+    public Page<ClaimListResponse> findClaims(
+            ClaimSearchCondition condition,
+
+            @PageableDefault(
+                size = 10,
+                sort = "createdAt",
+                direction = Sort.Direction.DESC
+            )
+            Pageable pageable,
+
+            @AuthenticationPrincipal
+            CustomUserDetails user
+    ) {
+        return claimService.findClaims(
+            condition,
+            user.getAccountId(),
+            pageable
+        );
     }
 
     /**
@@ -81,7 +105,9 @@ public class ClaimController {
     }
     
     @GetMapping("/{claimId}")
-    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3', 'ADMIN4', 'BRANCH_SHARED')"
+    )
     public ClaimResponse findOne(
             @PathVariable Long claimId,
             @AuthenticationPrincipal CustomUserDetails user
@@ -105,7 +131,9 @@ public class ClaimController {
     }
     
     @GetMapping("/{claimId}/histories")
-    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3', 'ADMIN4', 'BRANCH_SHARED')"
+    )
     public Page<ClaimHistoryResponse> findHistories(
             @PathVariable Long claimId,
 

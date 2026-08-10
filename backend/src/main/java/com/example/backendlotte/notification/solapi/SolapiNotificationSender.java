@@ -33,7 +33,7 @@ public class SolapiNotificationSender
         Message message = new Message();
 
         message.setFrom(
-            normalizePhone(properties.fromNumber())
+            normalizePhone(properties.sender())
         );
 
         message.setTo(
@@ -76,8 +76,8 @@ public class SolapiNotificationSender
             );
         }
 
-        if (properties.fromNumber() == null
-                || properties.fromNumber().isBlank()) {
+        if (properties.sender() == null
+                || properties.sender().isBlank()) {
 
             throw new IllegalStateException(
                 "SOLAPI 발신번호가 설정되어 있지 않습니다."

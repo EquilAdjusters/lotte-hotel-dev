@@ -32,22 +32,16 @@ app:
     password: ${INITIAL_ADMIN_PASSWORD}
     display-name: ${INITIAL_ADMIN_DISPLAY_NAME}
 
-    security:
-      login:
-        max-failures: 5
+  security:
+    login:
+      max-failures: 5
 
-      ip-restriction:
-        enabled: true
+    ip-restriction:
+      enabled: true
 
-    storage:
-      s3:
-        enabled: false
-        bucket: ${AWS_STORAGE_BUCKET_NAME}
-        region: ${AWS_S3_REGION_NAME:ap-northeast-2}
-        base-directory: ${S3_PREFIX:dev}/hotel-claim
-
-    notification:
-      solapi:
-        api-key: ${SOLAPI_API_KEY}
-        api-secret: ${SOLAPI_API_SECRET}
-        from-number: ${SOLAPI_FROM_NUMBER:}
+  storage:
+    s3:
+      enabled: false
+      bucket: ${AWS_STORAGE_BUCKET_NAME:}
+      region: ${AWS_S3_REGION_NAME:ap-northeast-2}
+      base-directory: ${S3_PREFIX:dev}/hotel-claim

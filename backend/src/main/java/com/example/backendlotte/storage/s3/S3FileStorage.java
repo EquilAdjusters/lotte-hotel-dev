@@ -25,6 +25,11 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @ConditionalOnProperty(
     prefix = "app.storage.s3",
     name = "enabled",
+    havingValue = "true"
+)
+@ConditionalOnProperty(
+    prefix = "app.storage.s3",
+    name = "enabled",
     havingValue = "false",
     matchIfMissing = true
 )
