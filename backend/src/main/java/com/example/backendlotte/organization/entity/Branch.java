@@ -2,6 +2,7 @@ package com.example.backendlotte.organization.entity;
 
 import com.example.backendlotte.global.entity.BaseEntity;
 import com.example.backendlotte.hotel.entity.Hotel;
+import com.example.backendlotte.insurance.entity.InsuranceCompany;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,6 +37,17 @@ public class Branch extends BaseEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "insurance_company_id")
+    private InsuranceCompany insuranceCompany;
+
+    @Column(
+        name = "receipt_email",
+        length = 200
+    )
+    
+    private String receiptEmail;
+    
     private Branch(
             Hotel hotel,
             String name
@@ -69,5 +81,26 @@ public class Branch extends BaseEntity {
 
     public void activate() {
         this.active = true;
+    }
+
+    public void updateInsuranceSetting(
+        InsuranceCompany insuranceCompany,
+        String receiptEmail
+    ) {
+        if (insuranceCompany == null) {
+            throw new IllegalArgumentException(
+                "보험사는 필수입니다."
+            );
+        }
+
+        if (receiptEmail == null
+                || receiptEmail.isBlank()) {
+            throw new IllegalArgumentException(
+                "접수메일은 필수입니다."
+            );
+        }
+
+        this.insuranceCompany = insuranceCompany;
+        this.receiptEmail = receiptEmail.trim();
     }
 }

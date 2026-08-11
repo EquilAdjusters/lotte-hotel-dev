@@ -56,7 +56,11 @@ public record ClaimResponse(
     LocalDateTime closedAt,
 
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+            
+    String adjustingCompanyName,
+    String adjusterName,
+    String adjusterPhone
 
 ) {
 
@@ -106,7 +110,19 @@ public record ClaimResponse(
             claim.getClosedAt(),
 
             claim.getCreatedAt(),
-            claim.getUpdatedAt()
+            claim.getUpdatedAt(),
+                    
+            claim.getAdjustingCompany() != null
+            ? claim.getAdjustingCompany().getName()
+            : null,
+
+            claim.getAdjuster() != null
+                ? claim.getAdjuster().getName()
+                : null,
+
+            claim.getAdjuster() != null
+                ? claim.getAdjuster().getPhone()
+                : null
         );
     }
 }

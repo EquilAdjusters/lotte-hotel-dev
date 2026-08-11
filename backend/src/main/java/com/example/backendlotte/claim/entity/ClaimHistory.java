@@ -349,28 +349,102 @@ public class ClaimHistory {
     ) {
         if (claim == null) {
             throw new IllegalArgumentException(
+                    "접수건 정보는 필수입니다.");
+        }
+
+        if (actorAccount == null) {
+            throw new IllegalArgumentException(
+                    "취소 처리 계정은 필수입니다.");
+        }
+
+        return new ClaimHistory(
+                claim,
+                actorAccount,
+                ClaimHistoryType.CANCELLED,
+                ClaimHistorySource.USER,
+                previousStatus,
+                ClaimStatus.CANCELLED,
+                null,
+                null,
+                null,
+                "사고접수 취소 - 요청 지점: "
+                        + claim.getBranch().getName());
+    }
+    
+    public static ClaimHistory assigned(
+        Claim claim,
+        Account actorAccount,
+        String currentValue
+    ) {
+        if (claim == null) {
+            throw new IllegalArgumentException(
                 "접수건 정보는 필수입니다."
             );
         }
 
         if (actorAccount == null) {
             throw new IllegalArgumentException(
-                "취소 처리 계정은 필수입니다."
+                "배정 처리 계정은 필수입니다."
+            );
+        }
+
+        if (currentValue == null
+                || currentValue.isBlank()) {
+            throw new IllegalArgumentException(
+                "배정 정보는 필수입니다."
             );
         }
 
         return new ClaimHistory(
             claim,
             actorAccount,
-            ClaimHistoryType.CANCELLED,
+            ClaimHistoryType.ASSIGNED,
             ClaimHistorySource.USER,
-            previousStatus,
-            ClaimStatus.CANCELLED,
+            claim.getStatus(),
+            claim.getStatus(),
             null,
             null,
+            currentValue,
+            "손해사정업체 및 담당자 최초 배정"
+        );
+    }
+
+    public static ClaimHistory assignmentChanged(
+            Claim claim,
+            Account actorAccount,
+            String previousValue,
+            String currentValue
+    ) {
+        if (claim == null) {
+            throw new IllegalArgumentException(
+                "접수건 정보는 필수입니다."
+            );
+        }
+
+        if (actorAccount == null) {
+            throw new IllegalArgumentException(
+                "배정 처리 계정은 필수입니다."
+            );
+        }
+
+        if (previousValue == null
+                || currentValue == null) {
+            throw new IllegalArgumentException(
+                "배정 변경 전·후 정보는 필수입니다."
+            );
+        }
+
+        return new ClaimHistory(
+            claim,
+            actorAccount,
+            ClaimHistoryType.ASSIGNMENT_CHANGED,
+            ClaimHistorySource.USER,
+            claim.getStatus(),
+            claim.getStatus(),
             null,
-            "사고접수 취소 - 요청 지점: "
-                + claim.getBranch().getName()
+            previousValue,
+            currentValue,
+            "손해사정업체 또는 담당자 배정 변경"
         );
     }
 }

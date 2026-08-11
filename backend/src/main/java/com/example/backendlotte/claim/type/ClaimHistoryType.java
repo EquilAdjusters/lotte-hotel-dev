@@ -8,5 +8,6 @@ public enum ClaimHistoryType {
     ASSIGNED,
     REASSIGNED,
     UPDATED,
-    CANCELLED
+    CANCELLED,
+    ASSIGNMENT_CHANGED
 }

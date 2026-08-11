@@ -45,3 +45,9 @@ app:
       bucket: ${AWS_STORAGE_BUCKET_NAME:}
       region: ${AWS_S3_REGION_NAME:ap-northeast-2}
       base-directory: ${S3_PREFIX:dev}/hotel-claim
+
+  external:
+    airtable:
+      api-key: ${AIRTABLE_API_KEY}
+      base-id: ${AIRTABLE_BASE_ID}
+      table-id: ${AIRTABLE_TABLE_ID}

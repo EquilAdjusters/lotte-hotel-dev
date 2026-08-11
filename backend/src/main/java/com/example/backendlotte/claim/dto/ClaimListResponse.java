@@ -19,7 +19,11 @@ public record ClaimListResponse(
     String receivedByName,
     String victimName,
     LocalDate victimBirthDate,
-
+    
+    String adjustingCompanyName,
+    String adjusterName,
+    String adjusterPhone,
+            
     ClaimProgressStatus progressStatus
 
 ) {
@@ -37,6 +41,18 @@ public record ClaimListResponse(
             claim.getReceivedByName(),
             claim.getVictimName(),
             claim.getVictimBirthDate(),
+                    
+            claim.getAdjustingCompany() != null
+            ? claim.getAdjustingCompany().getName()
+            : null,
+
+        claim.getAdjuster() != null
+            ? claim.getAdjuster().getName()
+            : null,
+
+        claim.getAdjuster() != null
+            ? claim.getAdjuster().getPhone()
+            : null,
 
             resolveProgressStatus(claim)
         );

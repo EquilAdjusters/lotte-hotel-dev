@@ -13,6 +13,9 @@ import com.example.backendlotte.global.entity.BaseEntity;
 import com.example.backendlotte.hotel.entity.Hotel;
 import com.example.backendlotte.organization.entity.Branch;
 import com.example.backendlotte.organization.entity.HotelCompany;
+import com.example.backendlotte.adjusting.entity.Adjuster;
+import com.example.backendlotte.adjusting.entity.AdjustingCompany;
+import com.example.backendlotte.account.entity.Account;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -212,6 +215,21 @@ public class Claim extends BaseEntity {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "adjusting_company_id")
+    private AdjustingCompany adjustingCompany;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "adjuster_id")
+    private Adjuster adjuster;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_by_account_id")
+    private Account assignedByAccount;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
     private Claim(
             String claimNumber,
             HotelCompany hotelCompany,
@@ -322,15 +340,21 @@ public class Claim extends BaseEntity {
         ClaimClosingResult closingResult,
         LocalDateTime closedAt
     ) {
+        if (this.status == ClaimStatus.CANCELLED) {
+            throw new IllegalStateException(
+                "취소된 접수건은 종결할 수 없습니다."
+            );
+        }
+
         if (this.status == ClaimStatus.CLOSED) {
             throw new IllegalStateException(
-                "이미 종결된 사고입니다."
+                "이미 종결된 접수건입니다."
             );
         }
 
         if (this.status != ClaimStatus.IN_PROGRESS) {
             throw new IllegalStateException(
-                "진행중 상태인 사고만 종결할 수 있습니다."
+                "진행중 상태의 접수건만 종결할 수 있습니다."
             );
         }
 
@@ -394,29 +418,70 @@ public class Claim extends BaseEntity {
     ) {
         if (this.status == ClaimStatus.CLOSED) {
             throw new IllegalStateException(
-                "종결된 접수건은 취소할 수 없습니다."
-            );
+                    "종결된 접수건은 취소할 수 없습니다.");
         }
 
         if (this.status == ClaimStatus.CANCELLED) {
             throw new IllegalStateException(
-                "이미 취소된 접수건입니다."
-            );
+                    "이미 취소된 접수건입니다.");
         }
 
         if (this.status != ClaimStatus.IN_PROGRESS) {
             throw new IllegalStateException(
-                "진행중 상태의 접수건만 취소할 수 있습니다."
-            );
+                    "진행중 상태의 접수건만 취소할 수 있습니다.");
         }
 
         if (cancelledAt == null) {
             throw new IllegalArgumentException(
-                "취소 일시는 필수입니다."
-            );
+                    "취소 일시는 필수입니다.");
         }
 
         this.status = ClaimStatus.CANCELLED;
         this.cancelledAt = cancelledAt;
+    }
+    
+    public void assignAdjuster(
+        AdjustingCompany adjustingCompany,
+        Adjuster adjuster,
+        Account assignedByAccount,
+        LocalDateTime assignedAt
+    ) {
+        if (adjustingCompany == null) {
+            throw new IllegalArgumentException(
+                "손해사정업체는 필수입니다."
+            );
+        }
+
+        if (adjuster == null) {
+            throw new IllegalArgumentException(
+                "손해사정 담당자는 필수입니다."
+            );
+        }
+
+        if (assignedByAccount == null) {
+            throw new IllegalArgumentException(
+                "배정 처리 계정은 필수입니다."
+            );
+        }
+
+        if (assignedAt == null) {
+            throw new IllegalArgumentException(
+                "배정 일시는 필수입니다."
+            );
+        }
+
+        if (!adjuster.getAdjustingCompany()
+                .getId()
+                .equals(adjustingCompany.getId())) {
+
+            throw new IllegalArgumentException(
+                "선택한 담당자가 해당 손해사정업체 소속이 아닙니다."
+            );
+        }
+
+        this.adjustingCompany = adjustingCompany;
+        this.adjuster = adjuster;
+        this.assignedByAccount = assignedByAccount;
+        this.assignedAt = assignedAt;
     }
 }

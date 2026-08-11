@@ -220,9 +220,40 @@ public final class ClaimSpecification {
             }
 
             return root
-                .get("branch")
-                .get("id")
-                .in(branchIds);
+                    .get("branch")
+                    .get("id")
+                    .in(branchIds);
+        };
+    }
+    
+    public static Specification<Claim> assignmentStatusEquals(
+        Boolean assigned
+    ) {
+        return (root, query, cb) -> {
+
+            if (assigned == null) {
+                return null;
+            }
+
+            if (assigned) {
+                return cb.and(
+                    cb.isNotNull(
+                        root.get("adjustingCompany")
+                    ),
+                    cb.isNotNull(
+                        root.get("adjuster")
+                    )
+                );
+            }
+
+            return cb.or(
+                cb.isNull(
+                    root.get("adjustingCompany")
+                ),
+                cb.isNull(
+                    root.get("adjuster")
+                )
+            );
         };
     }
 }
