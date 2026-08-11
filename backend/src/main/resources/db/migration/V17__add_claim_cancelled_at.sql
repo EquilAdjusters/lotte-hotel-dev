@@ -1,0 +1,2 @@
+ALTER TABLE claims
+    ADD COLUMN cancelled_at DATETIME(6) NULL;

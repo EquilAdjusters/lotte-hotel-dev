@@ -163,11 +163,12 @@ public final class ClaimSpecification {
                             cb.equal(
                                     root.get("closingResult"),
                                     ClaimClosingResult.EXEMPTED));
-
-                // 아직 취소 기능/DB 상태를 안 붙였으므로
-                // 다음 취소 단계에서 구현
+                                    
                 case CANCELLED ->
-                    cb.disjunction();
+                cb.equal(
+                    root.get("status"),
+                    ClaimStatus.CANCELLED
+                );
             };
         };
     }

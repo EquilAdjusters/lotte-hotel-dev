@@ -209,6 +209,9 @@ public class Claim extends BaseEntity {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
     private Claim(
             String claimNumber,
             HotelCompany hotelCompany,
@@ -365,8 +368,7 @@ public class Claim extends BaseEntity {
     ) {
         if (this.status == ClaimStatus.CLOSED) {
             throw new IllegalStateException(
-                "종결된 접수건은 수정할 수 없습니다."
-            );
+                    "종결된 접수건은 수정할 수 없습니다.");
         }
 
         this.victimName = victimName;
@@ -385,5 +387,36 @@ public class Claim extends BaseEntity {
 
         this.receivedByName = receivedByName;
         this.receivedByExtension = receivedByExtension;
+    }
+    
+    public void cancel(
+        LocalDateTime cancelledAt
+    ) {
+        if (this.status == ClaimStatus.CLOSED) {
+            throw new IllegalStateException(
+                "종결된 접수건은 취소할 수 없습니다."
+            );
+        }
+
+        if (this.status == ClaimStatus.CANCELLED) {
+            throw new IllegalStateException(
+                "이미 취소된 접수건입니다."
+            );
+        }
+
+        if (this.status != ClaimStatus.IN_PROGRESS) {
+            throw new IllegalStateException(
+                "진행중 상태의 접수건만 취소할 수 있습니다."
+            );
+        }
+
+        if (cancelledAt == null) {
+            throw new IllegalArgumentException(
+                "취소 일시는 필수입니다."
+            );
+        }
+
+        this.status = ClaimStatus.CANCELLED;
+        this.cancelledAt = cancelledAt;
     }
 }

@@ -49,6 +49,10 @@ public record ClaimListResponse(
             return ClaimProgressStatus.IN_PROGRESS;
         }
 
+        if (claim.getStatus() == ClaimStatus.CANCELLED) {
+            return ClaimProgressStatus.CANCELLED;
+        }
+
         if (claim.getStatus() == ClaimStatus.CLOSED) {
 
             if (claim.getClosingResult()

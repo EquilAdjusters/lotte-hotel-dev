@@ -1,5 +1,7 @@
 package com.example.backendlotte.claim.service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -639,8 +641,7 @@ public class ClaimService {
             case ADMIN3 -> {
                 if (context.hotel() == null) {
                     throw new IllegalStateException(
-                        "ADMIN3 계정에 호텔 소속이 설정되어 있지 않습니다."
-                    );
+                            "ADMIN3 계정에 호텔 소속이 설정되어 있지 않습니다.");
                 }
 
                 if (!claim.getHotel()
@@ -648,37 +649,31 @@ public class ClaimService {
                         .equals(context.hotel().getId())) {
 
                     throw new AccessDeniedException(
-                        "소속 호텔의 사고만 조회할 수 있습니다."
-                    );
+                            "소속 호텔의 사고만 조회할 수 있습니다.");
                 }
             }
 
             case ADMIN4 -> {
                 if (context.branchGroup() == null) {
                     throw new IllegalStateException(
-                        "ADMIN4 계정에 관리 그룹이 설정되어 있지 않습니다."
-                    );
+                            "ADMIN4 계정에 관리 그룹이 설정되어 있지 않습니다.");
                 }
 
-                boolean accessible =
-                    branchGroupMemberRepository
+                boolean accessible = branchGroupMemberRepository
                         .existsByBranchGroupIdAndBranchId(
-                            context.branchGroup().getId(),
-                            claim.getBranch().getId()
-                        );
+                                context.branchGroup().getId(),
+                                claim.getBranch().getId());
 
                 if (!accessible) {
                     throw new AccessDeniedException(
-                        "관리 범위에 포함된 지점의 사고만 조회할 수 있습니다."
-                    );
+                            "관리 범위에 포함된 지점의 사고만 조회할 수 있습니다.");
                 }
             }
 
             case BRANCH_SHARED -> {
                 if (context.branch() == null) {
                     throw new IllegalStateException(
-                        "지점 공유계정에 지점 소속이 설정되어 있지 않습니다."
-                    );
+                            "지점 공유계정에 지점 소속이 설정되어 있지 않습니다.");
                 }
 
                 if (!claim.getBranch()
@@ -686,15 +681,55 @@ public class ClaimService {
                         .equals(context.branch().getId())) {
 
                     throw new AccessDeniedException(
-                        "다른 지점의 사고는 조회할 수 없습니다."
-                    );
+                            "다른 지점의 사고는 조회할 수 없습니다.");
                 }
             }
 
             default ->
                 throw new AccessDeniedException(
-                    "사고현황을 조회할 권한이 없습니다."
-                );
+                        "사고현황을 조회할 권한이 없습니다.");
         }
+    }
+    
+    @Transactional
+    public void cancelClaim(
+            Long claimId,
+            Long accountId
+    ) {
+        ClaimSearchAccessContext context =
+            claimAccessContextResolver.resolveForSearch(
+                accountId
+            );
+
+        if (context.account().getRole() != Role.ADMIN1) {
+            throw new AccessDeniedException(
+                "접수취소는 최고관리자만 처리할 수 있습니다."
+            );
+        }
+
+        Claim claim = claimRepository
+            .findById(claimId)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "접수건을 찾을 수 없습니다."
+                )
+            );
+
+        ClaimStatus previousStatus =
+            claim.getStatus();
+
+        claim.cancel(
+            LocalDateTime.now(
+                ZoneId.of("Asia/Seoul")
+            )
+        );
+
+        claimHistoryRepository.save(
+            ClaimHistory.cancelledByAdmin(
+                claim,
+                context.account(),
+                previousStatus
+            )
+        );
     }
 }

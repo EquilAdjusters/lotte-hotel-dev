@@ -310,39 +310,67 @@ public class ClaimHistory {
     ) {
         if (claim == null) {
             throw new IllegalArgumentException(
+                    "접수건 정보는 필수입니다.");
+        }
+
+        if (actorAccount == null) {
+            throw new IllegalArgumentException(
+                    "수정 계정 정보는 필수입니다.");
+        }
+
+        if (previousValue == null
+                || currentValue == null) {
+            throw new IllegalArgumentException(
+                    "동의 정보 변경 전·후 값은 필수입니다.");
+        }
+
+        return new ClaimHistory(
+                claim,
+                actorAccount,
+                ClaimHistoryType.CONSENT_UPDATED,
+                ClaimHistorySource.USER,
+
+                // 사고 진행상태 자체는 변경하지 않음
+                claim.getStatus(),
+                claim.getStatus(),
+
+                null,
+
+                previousValue,
+                currentValue,
+
+                "개인정보 동의 정보 수정");
+    }
+    
+    public static ClaimHistory cancelledByAdmin(
+        Claim claim,
+        Account actorAccount,
+        ClaimStatus previousStatus
+    ) {
+        if (claim == null) {
+            throw new IllegalArgumentException(
                 "접수건 정보는 필수입니다."
             );
         }
 
         if (actorAccount == null) {
             throw new IllegalArgumentException(
-                "수정 계정 정보는 필수입니다."
-            );
-        }
-
-        if (previousValue == null
-                || currentValue == null) {
-            throw new IllegalArgumentException(
-                "동의 정보 변경 전·후 값은 필수입니다."
+                "취소 처리 계정은 필수입니다."
             );
         }
 
         return new ClaimHistory(
             claim,
             actorAccount,
-            ClaimHistoryType.CONSENT_UPDATED,
+            ClaimHistoryType.CANCELLED,
             ClaimHistorySource.USER,
-
-            // 사고 진행상태 자체는 변경하지 않음
-            claim.getStatus(),
-            claim.getStatus(),
-
+            previousStatus,
+            ClaimStatus.CANCELLED,
             null,
-
-            previousValue,
-            currentValue,
-
-            "개인정보 동의 정보 수정"
+            null,
+            null,
+            "사고접수 취소 - 요청 지점: "
+                + claim.getBranch().getName()
         );
     }
 }

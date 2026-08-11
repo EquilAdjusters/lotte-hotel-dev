@@ -148,9 +148,24 @@ public class ClaimController {
             CustomUserDetails user
     ) {
         return claimService.findHistories(
+                claimId,
+                user.getAccountId(),
+                pageable);
+    }
+    
+    @PostMapping("/{claimId}/cancel")
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1')"
+    )
+    public ResponseEntity<Void> cancelClaim(
+            @PathVariable Long claimId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        claimService.cancelClaim(
             claimId,
-            user.getAccountId(),
-            pageable
+            user.getAccountId()
         );
+
+        return ResponseEntity.noContent().build();
     }
 }
