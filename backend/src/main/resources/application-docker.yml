@@ -39,9 +39,6 @@ app:
     ip-restriction:
       enabled: true
 
-  storage:
-    s3:
-      enabled: false
-      bucket: ${AWS_STORAGE_BUCKET_NAME:}
-      region: ${AWS_S3_REGION_NAME:ap-northeast-2}
-      base-directory: ${S3_PREFIX:dev}/hotel-claim
+aws:
+  s3:
+    bucket: hotel-claim-files-prod-568289072099-ap-northeast-2-an

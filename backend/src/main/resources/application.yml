@@ -35,3 +35,7 @@ management:
   endpoint:
     health:
       show-details: never
+
+aws:
+  s3:
+    region: ap-northeast-2

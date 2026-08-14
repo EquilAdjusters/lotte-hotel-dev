@@ -23,7 +23,7 @@ services:
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Seoul"
 
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: local
 
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/hotel_claim_local?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
