@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const demoAccounts = [
-  { id: "manager", pw: "hotel2026", name: "김민준", role: "지배인 · 롯데호텔서울" },
-  { id: "staff", pw: "hotel2026", name: "이서준", role: "프론트 데스크" },
-  { id: "wise", pw: "hotel2026", name: "박지현", role: "WISE 담당 심사역" },
-];
+import axios from "axios";
+import { useAuth } from "@/shared/hooks/useAuth";
+import { loginRequest } from "@/features/auth/api/authApi";
 
 export default function LoginPage() {
+  const { user, login } = useAuth();
   const navigate = useNavigate();
 
   const [id, setId] = useState("");
@@ -18,7 +16,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     if (!id.trim() || !pw.trim()) {
@@ -26,108 +28,68 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const authenticatedUser = await loginRequest({
+        loginId: id.trim(),
+        password: pw,
+      });
+      login(authenticatedUser);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const message = (err.response?.data as { message?: string } | undefined)
+          ?.message;
+        setError(message ?? "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      } else {
+        setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    } finally {
       setLoading(false);
-      navigate("/");
-    }, 400);
-  };
-
-  const fillDemo = (account: (typeof demoAccounts)[number]) => {
-    setId(account.id);
-    setPw(account.pw);
-    setError(null);
+    }
   };
 
   return (
-    <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[1fr_0.95fr] bg-background-50">
-      {/* Left Panel */}
-      <div className="relative hidden lg:flex flex-col overflow-hidden bg-primary-900">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-900/40 via-primary-900/30 to-primary-950/65"></div>
-
-        <div className="relative z-10 flex items-center gap-6 px-12 pt-10">
+    <div className="flex min-h-screen w-full flex-col bg-background-50">
+      {/* Top Brand Header */}
+      <header className="relative border-b border-background-200/70 bg-background-50">
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-6 py-10 text-center md:py-14">
           <div className="flex items-center gap-3">
-            <span className="w-10 h-10 flex items-center justify-center rounded-md bg-background-50/15 backdrop-blur">
-              <i className="ri-building-line text-xl text-background-50"></i>
+            <span className="w-11 h-11 flex items-center justify-center rounded-lg bg-primary-500 text-background-50">
+              <i className="ri-building-line text-xl"></i>
             </span>
-            <div className="leading-tight">
-              <div className="font-heading text-lg font-semibold text-background-50">
+            <div className="leading-tight text-left">
+              <div className="font-heading text-lg font-semibold text-foreground-950">
                 호텔롯데
               </div>
-              <div className="text-[11px] tracking-[0.22em] uppercase text-background-50/70">
-                Hotel Lotte
-              </div>
-            </div>
-          </div>
-          <div className="h-8 w-px bg-background-50/20"></div>
-          <div className="leading-tight">
-            <div className="text-xs tracking-[0.18em] uppercase text-background-50/60">
-              Powered by
-            </div>
-            <div className="font-heading text-lg font-semibold text-background-50">
-              WISE
-            </div>
-            <div className="text-[11px] tracking-[0.1em] text-background-50/70">
-              보험중개
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 flex flex-1 flex-col justify-center px-12">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-background-50/25 bg-background-50/10 px-4 py-1.5 backdrop-blur w-fit">
-            <span className="w-2 h-2 flex items-center justify-center rounded-full bg-accent-400"></span>
-            <span className="text-xs tracking-[0.2em] uppercase text-background-50/90">
-              Claim Portal · Enterprise
-            </span>
-          </div>
-          <h2 className="font-heading text-4xl leading-tight text-background-50">
-            사고 발생부터
-            <br />
-            보상 완료까지,
-            <br />
-            <span className="text-accent-400">한 곳에서.</span>
-          </h2>
-        </div>
-
-        <div className="relative z-10 border-t border-background-50/10 px-12 py-6">
-          <div className="flex items-center gap-6 text-[11px] text-background-50/50">
-            <span>WISE Insurance Brokerage Co., Ltd.</span>
-            <span className="hidden sm:inline">|</span>
-            <span className="hidden sm:inline">고객사 전용 내부 시스템</span>
-            <span className="hidden sm:inline">|</span>
-            <span>© 2026</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Login Form */}
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden mb-8 flex items-center gap-3">
-            <div className="flex items-center gap-3">
-              <span className="w-10 h-10 flex items-center justify-center rounded-md bg-primary-500 text-background-50">
-                <i className="ri-building-line text-lg"></i>
-              </span>
-              <div className="leading-tight">
-                <div className="font-heading text-base font-semibold">
-                  호텔롯데
-                </div>
-                <div className="text-[11px] tracking-[0.16em] text-foreground-500">
-                  WISE 클레임 포털
-                </div>
+              <div className="text-[11px] tracking-[0.18em] text-foreground-500">
+                WISE 클레임 포털
               </div>
             </div>
           </div>
 
-          <div className="text-xs tracking-[0.2em] uppercase text-foreground-500">
-            WISE × Hotel Lotte
-          </div>
-          <h1 className="mt-2 font-heading text-3xl font-semibold text-foreground-950">
-            클레임 포털 로그인
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-foreground-600">
-            호텔롯데 직원 및 WISE 담당자 전용 시스템입니다.
-            발급받은 계정으로 로그인해 주세요.
+          <p className="mt-6 font-heading text-lg leading-relaxed text-foreground-950 md:text-2xl">
+            사고 발생부터 보상 완료까지,{" "}
+            <span className="text-accent-700">한 곳에서.</span>
           </p>
+        </div>
+      </header>
+
+      {/* Login Form */}
+      <main className="flex flex-1 items-center justify-center px-6 py-10 md:py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center">
+            <div className="text-xs tracking-[0.2em] uppercase text-foreground-500">
+              WISE × Hotel Lotte
+            </div>
+            <h1 className="mt-2 font-heading text-2xl font-semibold text-foreground-950 md:text-3xl">
+              클레임 포털 로그인
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-foreground-600">
+              호텔롯데 임직원 및 WISE 담당자 전용 시스템입니다.
+              <br className="hidden sm:block" />
+              발급받은 계정으로 로그인해 주세요.
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
@@ -148,7 +110,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   value={id}
                   onChange={(e) => setId(e.target.value)}
-                  placeholder="예: staff"
+                  placeholder="아이디를 입력하세요"
                   className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-foreground-400"
                 />
               </div>
@@ -172,7 +134,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
-                  placeholder="비밀번호"
+                  placeholder="비밀번호를 입력하세요"
                   className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-foreground-400"
                 />
                 <button
@@ -186,23 +148,15 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-foreground-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="h-4 w-4 rounded border-background-300 accent-primary-500 cursor-pointer"
-                />
-                로그인 유지
-              </label>
-              <button
-                type="button"
-                className="text-sm text-foreground-600 hover:text-primary-600 cursor-pointer whitespace-nowrap"
-              >
-                비밀번호 찾기
-              </button>
-            </div>
+            <label className="flex items-center gap-2 text-sm text-foreground-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 rounded border-background-300 accent-primary-500 cursor-pointer"
+              />
+              로그인 유지
+            </label>
 
             {error && (
               <div className="flex items-center gap-2 rounded-md border border-accent-300 bg-accent-100/70 px-3 py-2 text-sm text-accent-900">
@@ -220,7 +174,21 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Action buttons below login */}
           <div className="mt-5 flex flex-col gap-2">
+            <a
+              href="#"
+              className="flex items-center justify-center gap-2 rounded-md border border-background-300/60 bg-background-50 px-4 py-2.5 text-sm text-foreground-700 hover:border-primary-300 hover:bg-primary-50 cursor-pointer whitespace-nowrap"
+              onClick={(e) => {
+                e.preventDefault();
+                // TODO: 실제 동의서 파일 다운로드 링크로 교체
+              }}
+            >
+              <span className="w-4 h-4 flex items-center justify-center">
+                <i className="ri-file-download-line"></i>
+              </span>
+              제3자 정보제공활용동의서 다운로드
+            </a>
             <button
               type="button"
               onClick={() => setShowContactPopup(true)}
@@ -232,50 +200,18 @@ export default function LoginPage() {
               관리자 문의하기
             </button>
           </div>
-
-          <div className="mt-8 rounded-md border border-background-200/70 bg-background-100 p-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-foreground-700">
-              <span className="w-4 h-4 flex items-center justify-center text-accent-700">
-                <i className="ri-flashlight-line"></i>
-              </span>
-              데모 계정 (클릭 시 자동 입력)
-            </div>
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {demoAccounts.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => fillDemo(a)}
-                  className="rounded-md border border-background-200 bg-background-50 px-3 py-2 text-left hover:border-primary-300 hover:bg-primary-50 cursor-pointer"
-                >
-                  <div className="text-sm font-medium">{a.name}</div>
-                  <div className="text-[11px] text-foreground-500">{a.role}</div>
-                  <div className="mt-1 font-mono text-[11px] text-foreground-600">
-                    {a.id} / {a.pw}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-md border border-background-200/70 bg-background-50 p-4">
-            <div className="flex items-start gap-3">
-              <span className="w-8 h-8 flex items-center justify-center rounded-md bg-secondary-100 text-secondary-900 text-xs">
-                <i className="ri-shield-check-line"></i>
-              </span>
-              <div>
-                <div className="text-xs font-medium text-foreground-700">
-                  WISE 보안 정책
-                </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-foreground-500">
-                  본 시스템은 TLS 1.3 암호화 통신을 사용하며, 모든 접속 기록은
-                  금융보안규정에 따라 5년간 보관됩니다.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-background-200/70 px-6 py-5">
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-1 text-center text-[11px] text-foreground-500">
+          <span>
+            WISE Insurance Brokerage Co., Ltd. · 고객사 전용 내부 시스템
+          </span>
+          <span>© 2026 WISE 보험중개</span>
+        </div>
+      </footer>
 
       {/* Admin Contact Popup */}
       {showContactPopup && (

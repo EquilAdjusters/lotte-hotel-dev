@@ -85,7 +85,8 @@ public class ClaimService {
         // 1. 로그인 계정 및 피해장소 확정
         ClaimAccessContext context =
             claimAccessContextResolver.resolveForCreate(
-                accountId
+                accountId,
+                request.branchId()
             );
 
         // 2. 요청값 간 조합 검증
@@ -199,7 +200,8 @@ public class ClaimService {
         }
 
         ClaimAccessContext context = claimAccessContextResolver.resolveForCreate(
-                accountId);
+                accountId
+            );
 
         return claimRepository
                 .findAllByBranchIdAndVictimNameAndVictimBirthDateOrderByCreatedAtDesc(

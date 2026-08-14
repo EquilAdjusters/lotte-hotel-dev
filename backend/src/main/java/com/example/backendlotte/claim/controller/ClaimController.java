@@ -45,11 +45,13 @@ public class ClaimController {
     /**
      * 사고접수
      *
-     * 현재 접수 화면은 지점 공유계정 전용이다.
+     * 지점 공유계정은 계정 소속 지점으로 자동 고정, ADMIN1~4는 세부지점을 직접 선택한다.
      * Service의 ClaimAccessContextResolver에서도 동일하게 재검증한다.
      */
     @PostMapping
-    @PreAuthorize("hasRole('BRANCH_SHARED')")
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3', 'ADMIN4', 'BRANCH_SHARED')"
+    )
     public ResponseEntity<ClaimResponse> createClaim(
             @Valid @RequestBody ClaimCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails user

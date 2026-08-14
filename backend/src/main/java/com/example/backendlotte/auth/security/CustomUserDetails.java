@@ -28,6 +28,10 @@ public class CustomUserDetails implements UserDetails {
     private final Long branchId;
     private final Long branchGroupId;
 
+    private final String hotelCompanyName;
+    private final String hotelName;
+    private final String branchName;
+
     public CustomUserDetails(Account account) {
         this.accountId = account.getId();
         this.loginId = account.getLoginId();
@@ -53,6 +57,18 @@ public class CustomUserDetails implements UserDetails {
         this.branchGroupId = account.getBranchGroup() == null
                 ? null
                 : account.getBranchGroup().getId();
+
+        this.hotelCompanyName = account.getHotelCompany() == null
+                ? null
+                : account.getHotelCompany().getName();
+
+        this.hotelName = account.getHotel() == null
+                ? null
+                : account.getHotel().getName();
+
+        this.branchName = account.getBranch() == null
+                ? null
+                : account.getBranch().getName();
     }
 
     @Override
@@ -126,6 +142,18 @@ public class CustomUserDetails implements UserDetails {
 
     public Long getBranchGroupId() {
         return branchGroupId;
+    }
+
+    public String getHotelCompanyName() {
+        return hotelCompanyName;
+    }
+
+    public String getHotelName() {
+        return hotelName;
+    }
+
+    public String getBranchName() {
+        return branchName;
     }
 
     @Override

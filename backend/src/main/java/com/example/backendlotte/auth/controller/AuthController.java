@@ -124,7 +124,10 @@ public class AuthController {
                             user.getUsername(),
                             user.getDisplayName(),
                             user.getRole(),
-                            user.getScopeType()));
+                            user.getScopeType(),
+                            user.getHotelCompanyName(),
+                            user.getHotelName(),
+                            user.getBranchName()));
 
         } catch (LockedException exception) {
             loginAttemptService.recordFailure(
@@ -209,7 +212,10 @@ public class AuthController {
                 user.getUsername(),
                 user.getDisplayName(),
                 user.getRole(),
-                user.getScopeType());
+                user.getScopeType(),
+                user.getHotelCompanyName(),
+                user.getHotelName(),
+                user.getBranchName());
     }
     
     private ResponseEntity<Map<String, String>> unauthorizedResponse() {

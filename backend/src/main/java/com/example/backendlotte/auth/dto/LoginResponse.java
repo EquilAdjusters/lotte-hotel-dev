@@ -8,7 +8,10 @@ public record LoginResponse(
     String loginId,
     String displayName,
     Role role,
-    ScopeType scopeType
+    ScopeType scopeType,
+    String hotelCompanyName,
+    String hotelName,
+    String branchName
 ) {
-    
+
 }

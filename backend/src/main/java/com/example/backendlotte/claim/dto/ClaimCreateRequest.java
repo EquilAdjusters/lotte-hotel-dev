@@ -63,6 +63,8 @@ public record ClaimCreateRequest(
         message = "상세주소는 200자 이하로 입력해주세요."
     )
     String residenceDetail,
+            
+    Long branchId,
 
     @NotNull(message = "사고유형은 필수입니다.")
     ClaimType claimType,

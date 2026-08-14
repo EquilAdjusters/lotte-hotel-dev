@@ -1,4 +1,4 @@
-import type { RouteObject } from "react-router-dom";
+import { Navigate, type RouteObject } from "react-router-dom";
 import NotFoundPage from "@/pages/errors/not-found/page";
 import DashboardPage from "@/pages/dashboard/page";
 import LoginPage from "@/pages/auth/login/page";
@@ -10,11 +10,15 @@ import AdminClaimsPage from "@/pages/admin/claims/page";
 const routes: RouteObject[] = [
   {
     path: "/",
-    element: <DashboardPage />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/dashboard",
+    element: <DashboardPage />,
   },
   {
     path: "/claims/new",

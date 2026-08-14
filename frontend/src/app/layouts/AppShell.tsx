@@ -1,20 +1,43 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useAuth } from "@/shared/hooks/useAuth";
+import type { Role } from "@/entities/user/model/types";
+import { logoutRequest } from "@/features/auth/api/authApi";
 
 interface AppShellProps {
   children: ReactNode;
 }
 
 const navItems = [
-  { to: "/", label: "대시보드", icon: "ri-dashboard-2-line" },
+  { to: "/dashboard", label: "대시보드", icon: "ri-dashboard-2-line" },
   { to: "/claims/new", label: "사고 접수", icon: "ri-clipboard-line" },
   { to: "/claims", label: "현황 조회", icon: "ri-search-eye-line" },
   { to: "/admin/claims", label: "클레임 관리", icon: "ri-table-line" },
   { to: "/admin/accounts", label: "관리자 설정", icon: "ri-settings-3-line" },
 ];
 
+const roleLabels: Record<Role, string> = {
+  ADMIN1: "와이즈 관리자",
+  ADMIN2: "이퀼손사 센터장",
+  ADMIN3: "호텔 본사 관리자",
+  ADMIN4: "롯데 권역 영업지원팀",
+  BRANCH_SHARED: "지점 공유계정",
+};
+
 export default function AppShell({ children }: AppShellProps) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutRequest();
+    } catch {
+      // 세션이 이미 만료된 경우 등은 무시하고 로컬 상태만 정리한다.
+    }
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   const currentTitle =
     navItems.find((n) => n.to === location.pathname)?.label ?? "클레임 관리";
@@ -24,7 +47,7 @@ export default function AppShell({ children }: AppShellProps) {
       <header className="sticky top-0 z-30 border-b border-background-200/70 bg-background-50/90 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-6">
           <div className="flex items-center gap-8">
-            <a href="/" className="flex items-center gap-3 cursor-pointer whitespace-nowrap">
+            <a href="/dashboard" className="flex items-center gap-3 cursor-pointer whitespace-nowrap">
               <span className="w-9 h-9 flex items-center justify-center rounded-md bg-primary-500 text-background-50">
                 <i className="ri-building-line text-lg"></i>
               </span>
@@ -44,7 +67,7 @@ export default function AppShell({ children }: AppShellProps) {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === "/"}
+                  end
                   className={({ isActive }) =>
                     `flex items-center gap-2 rounded-md px-3 py-2 text-sm cursor-pointer whitespace-nowrap transition ${
                       isActive
@@ -62,12 +85,36 @@ export default function AppShell({ children }: AppShellProps) {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <NavLink
-              to="/login"
-              className="rounded-md bg-primary-500 px-4 py-2 text-sm text-background-50 hover:bg-primary-600 cursor-pointer whitespace-nowrap"
-            >
-              로그인
-            </NavLink>
+            {user ? (
+              <>
+                <div className="hidden sm:flex flex-col items-end leading-tight">
+                  <span className="text-sm font-medium">{user.displayName}</span>
+                  <span className="text-[11px] text-foreground-500">
+                    {roleLabels[user.role]}
+                  </span>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary-100 text-secondary-900 text-sm font-medium">
+                  {user.displayName.slice(0, 1)}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1 rounded-md border border-background-300/60 px-3 py-2 text-sm text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap"
+                >
+                  <span className="w-4 h-4 flex items-center justify-center">
+                    <i className="ri-logout-box-r-line"></i>
+                  </span>
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <NavLink
+                to="/login"
+                className="rounded-md bg-primary-500 px-4 py-2 text-sm text-background-50 hover:bg-primary-600 cursor-pointer whitespace-nowrap"
+              >
+                로그인
+              </NavLink>
+            )}
           </div>
         </div>
         <nav className="md:hidden flex items-center gap-1 border-t border-background-200/70 px-4 py-2 overflow-x-auto">
@@ -75,7 +122,7 @@ export default function AppShell({ children }: AppShellProps) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === "/"}
+              end
               className={({ isActive }) =>
                 `flex items-center gap-1 rounded-md px-3 py-1.5 text-xs whitespace-nowrap ${
                   isActive
