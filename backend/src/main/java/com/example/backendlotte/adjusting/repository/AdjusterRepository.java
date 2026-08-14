@@ -13,4 +13,9 @@ extends JpaRepository<Adjuster, Long> {
         findAllByAdjustingCompanyIdAndActiveTrueOrderByNameAsc(
             Long adjustingCompanyId
         );
+
+    List<Adjuster>
+        findAllByAdjustingCompanyIdOrderByNameAsc(
+            Long adjustingCompanyId
+        );
 }

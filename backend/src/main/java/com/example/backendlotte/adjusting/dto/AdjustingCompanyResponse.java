@@ -5,7 +5,8 @@ import com.example.backendlotte.adjusting.entity.AdjustingCompany;
 public record AdjustingCompanyResponse(
     Long id,
     String name,
-    String businessNumber
+    String businessNumber,
+    boolean active
 ) {
     public static AdjustingCompanyResponse from(
             AdjustingCompany company
@@ -13,7 +14,8 @@ public record AdjustingCompanyResponse(
         return new AdjustingCompanyResponse(
             company.getId(),
             company.getName(),
-            company.getBusinessNumber()
+            company.getBusinessNumber(),
+            company.isActive()
         );
     }
 }

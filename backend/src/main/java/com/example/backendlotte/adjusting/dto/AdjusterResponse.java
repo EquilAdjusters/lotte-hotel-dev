@@ -6,7 +6,8 @@ public record AdjusterResponse(
     Long id,
     Long adjustingCompanyId,
     String name,
-    String phone
+    String phone,
+    boolean active
 ) {
     public static AdjusterResponse from(
             Adjuster adjuster
@@ -15,7 +16,8 @@ public record AdjusterResponse(
             adjuster.getId(),
             adjuster.getAdjustingCompany().getId(),
             adjuster.getName(),
-            adjuster.getPhone()
+            adjuster.getPhone(),
+            adjuster.isActive()
         );
     }
 }

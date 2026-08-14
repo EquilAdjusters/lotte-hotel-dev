@@ -18,6 +18,25 @@ export type ConsentStatus = "OBTAINED" | "NOT_OBTAINED";
 
 export type ConsentMethod = "WRITTEN" | "TEXT_MESSAGE" | "ORAL";
 
+export type ClaimAttachmentType =
+  | "CONSENT_FORM"
+  | "ACCIDENT_REPORT"
+  | "ACCIDENT_PHOTO"
+  | "DAMAGE_PHOTO"
+  | "RECEIPT"
+  | "OTHER";
+
+export interface ClaimAttachmentResponse {
+  id: number;
+  claimId: number;
+  attachmentType: ClaimAttachmentType;
+  originalFileName: string;
+  contentType: string;
+  fileSize: number;
+  uploadedByAccountId: number;
+  createdAt: string;
+}
+
 export interface ClaimConsentPayload {
   consentStatus: ConsentStatus;
   consentObtainedAt: string | null;
@@ -126,7 +145,16 @@ export interface ClaimHistoryResponse {
   claimId: number;
   actorAccountId: number | null;
   actorLoginId: string | null;
-  historyType: "CREATED" | "STATUS_CHANGED" | "CLOSED" | "CONSENT_UPDATED";
+  historyType:
+    | "CREATED"
+    | "STATUS_CHANGED"
+    | "CLOSED"
+    | "CONSENT_UPDATED"
+    | "ASSIGNED"
+    | "REASSIGNED"
+    | "UPDATED"
+    | "CANCELLED"
+    | "ASSIGNMENT_CHANGED";
   sourceType: "USER" | "SYSTEM" | "EXTERNAL_ADAPTER";
   previousStatus: ClaimStatus | null;
   currentStatus: ClaimStatus | null;

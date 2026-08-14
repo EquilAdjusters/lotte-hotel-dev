@@ -109,7 +109,7 @@ public class ClaimController {
     
     @GetMapping("/export")
     @PreAuthorize(
-        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3')"
+        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3', 'ADMIN4')"
     )
     public ResponseEntity<byte[]> exportClaims(
             ClaimSearchCondition condition,

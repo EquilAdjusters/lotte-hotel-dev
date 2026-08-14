@@ -1,4 +1,5 @@
 import type {
+  ClaimProgressStatus,
   ClaimType,
   ConsentMethod,
   PreferredLanguage,
@@ -26,6 +27,43 @@ export const languageLabelToEnum: Record<string, PreferredLanguage> = {
   영어: "ENGLISH",
   중국어: "CHINESE",
   일어: "JAPANESE",
+};
+
+export const victimTypeToLabel: Record<VictimType, string> = {
+  DOMESTIC: "내국인",
+  FOREIGNER: "외국인",
+};
+
+export const claimTypeToLabel: Record<ClaimType, string> = {
+  PROPERTY_DAMAGE: "재물사고",
+  LIABILITY: "배상사고",
+};
+
+export const consentMethodToLabel: Record<ConsentMethod, string> = {
+  WRITTEN: "서면",
+  TEXT_MESSAGE: "문자",
+  ORAL: "구두",
+};
+
+export const languageToLabel: Record<PreferredLanguage, string> = {
+  KOREAN: "한국어",
+  ENGLISH: "영어",
+  CHINESE: "중국어",
+  JAPANESE: "일어",
+};
+
+export const progressStatusToLabel: Record<ClaimProgressStatus, string> = {
+  IN_PROGRESS: "진행중",
+  CLOSED_PAID: "종결(보험금 지급)",
+  CLOSED_EXEMPTED: "종결(면책)",
+  CANCELLED: "취소",
+};
+
+export const progressStatusBadge: Record<ClaimProgressStatus, string> = {
+  IN_PROGRESS: "bg-primary-100 text-primary-800",
+  CLOSED_PAID: "bg-background-200/80 text-foreground-700",
+  CLOSED_EXEMPTED: "bg-background-100 text-foreground-500",
+  CANCELLED: "bg-accent-100 text-accent-900",
 };
 
 /**

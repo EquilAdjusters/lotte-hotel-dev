@@ -22,6 +22,7 @@ import com.example.backendlotte.claim.repository.ClaimExportLogRepository;
 import com.example.backendlotte.claim.repository.ClaimRepository;
 import com.example.backendlotte.claim.specification.ClaimSpecification;
 import com.example.backendlotte.global.util.PersonalDataMasker;
+import com.example.backendlotte.organization.repository.BranchGroupMemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +36,7 @@ public class ClaimExportService {
     private final ClaimExportLogRepository claimExportLogRepository;
     private final AccountRepository accountRepository;
     private final ClaimAccessContextResolver claimAccessContextResolver;
+    private final BranchGroupMemberRepository branchGroupMemberRepository;
 
     @Transactional
     public byte[] exportClaims(
@@ -112,7 +114,8 @@ public class ClaimExportService {
 
         if (role != Role.ADMIN1
                 && role != Role.ADMIN2
-                && role != Role.ADMIN3) {
+                && role != Role.ADMIN3
+                && role != Role.ADMIN4) {
             throw new AccessDeniedException(
                 "사고현황 다운로드 권한이 없습니다."
             );
@@ -141,6 +144,31 @@ public class ClaimExportService {
                 yield spec.and(
                     ClaimSpecification.hotelIdEquals(
                         context.hotel().getId()
+                    )
+                );
+            }
+
+            case ADMIN4 -> {
+                if (context.branchGroup() == null) {
+                    throw new IllegalStateException(
+                        "ADMIN4 계정에 관리 그룹이 설정되어 있지 않습니다."
+                    );
+                }
+
+                List<Long> branchIds =
+                    branchGroupMemberRepository
+                        .findAllByBranchGroupId(
+                            context.branchGroup().getId()
+                        )
+                        .stream()
+                        .map(member ->
+                            member.getBranch().getId()
+                        )
+                        .toList();
+
+                yield spec.and(
+                    ClaimSpecification.branchIdIn(
+                        branchIds
                     )
                 );
             }

@@ -11,4 +11,7 @@ extends JpaRepository<AdjustingCompany, Long> {
 
     List<AdjustingCompany>
         findAllByActiveTrueOrderByNameAsc();
+
+    List<AdjustingCompany>
+        findAllByOrderByNameAsc();
 }

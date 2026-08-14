@@ -4,7 +4,12 @@ import axios from "axios";
 import AppShell from "@/app/layouts/AppShell";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { sidoList, sigunguMap } from "@/shared/constants/regions";
-import { createClaim } from "@/entities/claim/api/claimApi";
+import {
+  createClaim,
+  fetchDuplicateClaims,
+  uploadClaimAttachment,
+} from "@/entities/claim/api/claimApi";
+import type { ClaimDuplicateResponse } from "@/entities/claim/model/types";
 import { fetchBranches } from "@/entities/branch/api/branchApi";
 import type { BranchOption } from "@/entities/branch/model/types";
 import {
@@ -36,7 +41,7 @@ interface FormData {
   consentObtained: boolean;
   consentDate: string;
   consentMethod: string;
-  consentAttachment: string;
+  consentAttachment: File | null;
 }
 
 const initialForm: FormData = {
@@ -58,7 +63,7 @@ const initialForm: FormData = {
   consentObtained: false,
   consentDate: "",
   consentMethod: "서면",
-  consentAttachment: "",
+  consentAttachment: null,
 };
 
 export default function ClaimCreatePage() {
@@ -81,6 +86,7 @@ function ReportContent() {
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachmentWarning, setAttachmentWarning] = useState<string | null>(null);
 
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(() => !isBranchShared);
@@ -92,6 +98,24 @@ function ReportContent() {
       .catch(() => setBranches([]))
       .finally(() => setBranchesLoading(false));
   }, [isBranchShared]);
+
+  // 피해자명 + 생년월일 조합으로 중복 의심 접수를 조회한다. (지점공유계정 전용, 하드 블록 아님)
+  const [duplicates, setDuplicates] = useState<ClaimDuplicateResponse[]>([]);
+
+  useEffect(() => {
+    if (!isBranchShared) return;
+    const timer = setTimeout(() => {
+      const birthDate = parseKoreanShortBirthDate(form.victimBirthDate);
+      if (!form.victimName.trim() || !birthDate) {
+        setDuplicates([]);
+        return;
+      }
+      fetchDuplicateClaims(form.victimName.trim(), birthDate)
+        .then(setDuplicates)
+        .catch(() => setDuplicates([]));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isBranchShared, form.victimName, form.victimBirthDate]);
 
 
   const update = <K extends keyof FormData>(k: K, v: FormData[K]) => {
@@ -149,10 +173,11 @@ function ReportContent() {
     const nowTime = new Date().toISOString().slice(11, 19);
 
     setSubmitting(true);
+    setAttachmentWarning(null);
     try {
       // BRANCH_SHARED는 계정 소속 지점으로 서버가 강제 고정하므로 branchId를 보내지 않는다.
       // ADMIN1~4는 세부지점을 직접 선택해야 하므로 branchId를 함께 전송한다.
-      await createClaim({
+      const response = await createClaim({
         victimName: form.victimName.trim(),
         victimPhone: form.victimPhone.trim(),
         victimBirthDate,
@@ -175,6 +200,21 @@ function ReportContent() {
           consentMethod: consentMethodLabelToEnum[form.consentMethod],
         },
       });
+
+      if (form.consentAttachment) {
+        try {
+          await uploadClaimAttachment(
+            response.id,
+            "CONSENT_FORM",
+            form.consentAttachment
+          );
+        } catch {
+          setAttachmentWarning(
+            "접수는 완료되었으나 동의서 첨부파일 업로드에는 실패했습니다."
+          );
+        }
+      }
+
       setShowModal(true);
       setForm({ ...initialForm, reporterName: user?.displayName ?? "" });
     } catch (err) {
@@ -193,6 +233,7 @@ function ReportContent() {
   const handleReset = () => {
     setForm({ ...initialForm, reporterName: user?.displayName ?? "" });
     setError(null);
+    setAttachmentWarning(null);
     setShowModal(false);
   };
 
@@ -265,6 +306,23 @@ function ReportContent() {
                   </div>
                 </Field>
               </div>
+
+              {duplicates.length > 0 && (
+                <div className="rounded-md border border-accent-300 bg-accent-50/70 px-4 py-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-accent-900">
+                    <i className="ri-error-warning-line"></i>
+                    동일 이름·생년월일의 접수 이력이 있습니다. (중복 접수를 막지는 않습니다)
+                  </p>
+                  <ul className="mt-2 space-y-1 text-[11px] text-accent-800">
+                    {duplicates.map((d) => (
+                      <li key={d.claimId} className="font-mono">
+                        {d.claimNumber} · {d.hotelName}/{d.branchName} ·{" "}
+                        {new Date(d.accidentAt).toLocaleDateString("ko-KR")}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <Field label="사용가능 언어" hint="복수 선택 가능">
                 <div className="flex flex-wrap gap-3">
@@ -523,7 +581,7 @@ function ReportContent() {
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={form.consentAttachment}
+                    value={form.consentAttachment?.name ?? ""}
                     readOnly
                     placeholder="선택된 파일 없음"
                     className="flex-1 rounded-md border border-background-300/60 bg-background-50 px-3 py-2.5 text-sm text-foreground-500 outline-none"
@@ -536,7 +594,7 @@ function ReportContent() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          update("consentAttachment", file.name);
+                          update("consentAttachment", file);
                         }
                       }}
                     />
@@ -592,6 +650,9 @@ function ReportContent() {
             <div className="mb-6 text-sm text-foreground-900 leading-relaxed">
               <p>사고접수가 완료되었으며,</p>
               <p>피해자에게 접수문자 안내되었습니다.</p>
+              {attachmentWarning && (
+                <p className="mt-3 text-xs text-accent-700">{attachmentWarning}</p>
+              )}
             </div>
             <button
               type="button"

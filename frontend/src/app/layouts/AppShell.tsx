@@ -8,12 +8,22 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-const navItems = [
+const navItems: { to: string; label: string; icon: string; roles?: Role[] }[] = [
   { to: "/dashboard", label: "대시보드", icon: "ri-dashboard-2-line" },
   { to: "/claims/new", label: "사고 접수", icon: "ri-clipboard-line" },
   { to: "/claims", label: "현황 조회", icon: "ri-search-eye-line" },
-  { to: "/admin/claims", label: "클레임 관리", icon: "ri-table-line" },
-  { to: "/admin/accounts", label: "관리자 설정", icon: "ri-settings-3-line" },
+  {
+    to: "/admin/claims",
+    label: "클레임 관리",
+    icon: "ri-table-line",
+    roles: ["ADMIN1", "ADMIN2"],
+  },
+  {
+    to: "/admin/accounts",
+    label: "관리자 설정",
+    icon: "ri-settings-3-line",
+    roles: ["ADMIN1"],
+  },
 ];
 
 const roleLabels: Record<Role, string> = {
@@ -39,6 +49,10 @@ export default function AppShell({ children }: AppShellProps) {
     navigate("/login", { replace: true });
   };
 
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role))
+  );
+
   const currentTitle =
     navItems.find((n) => n.to === location.pathname)?.label ?? "클레임 관리";
 
@@ -63,7 +77,7 @@ export default function AppShell({ children }: AppShellProps) {
               </div>
             </a>
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}

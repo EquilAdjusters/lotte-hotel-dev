@@ -46,22 +46,31 @@ public class AdjustingService {
     private final ClaimHistoryRepository claimHistoryRepository;
 
     @Transactional(readOnly = true)
-    public List<AdjustingCompanyResponse> findActiveCompanies() {
-        return adjustingCompanyRepository
-            .findAllByActiveTrueOrderByNameAsc()
+    public List<AdjustingCompanyResponse> findCompanies(
+            boolean activeOnly
+    ) {
+        List<AdjustingCompany> companies = activeOnly
+            ? adjustingCompanyRepository.findAllByActiveTrueOrderByNameAsc()
+            : adjustingCompanyRepository.findAllByOrderByNameAsc();
+
+        return companies
             .stream()
             .map(AdjustingCompanyResponse::from)
             .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<AdjusterResponse> findActiveAdjusters(
-            Long adjustingCompanyId
+    public List<AdjusterResponse> findAdjusters(
+            Long adjustingCompanyId,
+            boolean activeOnly
     ) {
-        return adjusterRepository
-            .findAllByAdjustingCompanyIdAndActiveTrueOrderByNameAsc(
-                adjustingCompanyId
-            )
+        List<Adjuster> adjusters = activeOnly
+            ? adjusterRepository.findAllByAdjustingCompanyIdAndActiveTrueOrderByNameAsc(
+                adjustingCompanyId)
+            : adjusterRepository.findAllByAdjustingCompanyIdOrderByNameAsc(
+                adjustingCompanyId);
+
+        return adjusters
             .stream()
             .map(AdjusterResponse::from)
             .toList();

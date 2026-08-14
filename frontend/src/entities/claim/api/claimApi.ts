@@ -1,5 +1,7 @@
 import { apiClient } from "@/shared/api/client";
 import type {
+  ClaimAttachmentResponse,
+  ClaimAttachmentType,
   ClaimCreatePayload,
   ClaimDuplicateResponse,
   ClaimHistoryResponse,
@@ -90,4 +92,37 @@ export async function exportClaims(
     responseType: "blob",
   });
   return data;
+}
+
+export async function uploadClaimAttachment(
+  claimId: number,
+  attachmentType: ClaimAttachmentType,
+  file: File
+): Promise<ClaimAttachmentResponse> {
+  const formData = new FormData();
+  formData.append("attachmentType", attachmentType);
+  formData.append("file", file);
+
+  const { data } = await apiClient.post<ClaimAttachmentResponse>(
+    `/api/claims/${claimId}/attachments`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return data;
+}
+
+export async function fetchClaimAttachments(
+  claimId: number
+): Promise<ClaimAttachmentResponse[]> {
+  const { data } = await apiClient.get<ClaimAttachmentResponse[]>(
+    `/api/claims/${claimId}/attachments`
+  );
+  return data;
+}
+
+export async function deleteClaimAttachment(
+  claimId: number,
+  attachmentId: number
+): Promise<void> {
+  await apiClient.delete(`/api/claims/${claimId}/attachments/${attachmentId}`);
 }
