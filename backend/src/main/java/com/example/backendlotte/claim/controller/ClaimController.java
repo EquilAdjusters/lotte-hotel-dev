@@ -26,6 +26,7 @@ import com.example.backendlotte.claim.dto.ClaimCreateRequest;
 import com.example.backendlotte.claim.dto.ClaimDuplicateResponse;
 import com.example.backendlotte.claim.dto.ClaimResponse;
 import com.example.backendlotte.claim.dto.ClaimUpdateRequest;
+import com.example.backendlotte.claim.service.ClaimExportService;
 import com.example.backendlotte.claim.service.ClaimService;
 import com.example.backendlotte.claim.dto.ClaimListResponse;
 import com.example.backendlotte.claim.dto.ClaimSearchCondition;
@@ -39,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class ClaimController {
 
     private final ClaimService claimService;
+    private final ClaimExportService claimExportService;
 
     /**
      * 사고접수
@@ -98,10 +100,41 @@ public class ClaimController {
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return claimService.findDuplicates(
-            victimName,
-            victimBirthDate,
-            user.getAccountId()
-        );
+                victimName,
+                victimBirthDate,
+                user.getAccountId());
+    }
+    
+    @GetMapping("/export")
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1', 'ADMIN2', 'ADMIN3')"
+    )
+    public ResponseEntity<byte[]> exportClaims(
+            ClaimSearchCondition condition,
+            @AuthenticationPrincipal
+            CustomUserDetails user
+    ) {
+        byte[] excel =
+            claimExportService.exportClaims(
+                condition,
+                user.getAccountId()
+            );
+
+        String fileName =
+            "claim_status.xlsx";
+
+        return ResponseEntity.ok()
+            .header(
+                "Content-Disposition",
+                "attachment; filename=\""
+                    + fileName
+                    + "\""
+            )
+            .header(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            .body(excel);
     }
     
     @GetMapping("/{claimId}")
@@ -162,9 +195,8 @@ public class ClaimController {
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         claimService.cancelClaim(
-            claimId,
-            user.getAccountId()
-        );
+                claimId,
+                user.getAccountId());
 
         return ResponseEntity.noContent().build();
     }

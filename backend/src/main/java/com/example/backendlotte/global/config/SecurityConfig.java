@@ -6,6 +6,9 @@ import com.example.backendlotte.auth.security.CustomAuthenticationEntryPoint;
 
 import java.util.List;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
@@ -52,33 +55,66 @@ public class SecurityConfig {
 
                 .csrf(csrf -> csrf.disable())
 
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(
-                                SessionCreationPolicy.IF_REQUIRED)
-                )
+                                SessionCreationPolicy.IF_REQUIRED))
 
                 .exceptionHandling(exception -> exception
-                    .authenticationEntryPoint(authenticationEntryPoint)
-                )
+                        .authenticationEntryPoint(authenticationEntryPoint))
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/health")
+                                "/api/health",
+                                "/actuator/health")
                         .permitAll()
                         .anyRequest()
-                        .authenticated()
-                )
+                        .authenticated())
 
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
-        
+
         http.addFilterBefore(
-            expiredSessionFilter,
-            AuthorizationFilter.class
-        );
+                expiredSessionFilter,
+                AuthorizationFilter.class);
 
         return http.build();
+    }
+    
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://hotel-claim-management.com",
+                "https://www.hotel-claim-management.com"
+        ));
+
+        configuration.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(List.of("*"));
+
+        configuration.setAllowCredentials(true);
+
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
     
     @Bean

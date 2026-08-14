@@ -4,6 +4,8 @@ import DashboardPage from "@/pages/dashboard/page";
 import LoginPage from "@/pages/auth/login/page";
 import ClaimCreatePage from "@/pages/claims/create/page";
 import ClaimListPage from "@/pages/claims/list/page";
+import AdminAccountsPage from "@/pages/admin/accounts/page";
+import AdminClaimsPage from "@/pages/admin/claims/page";
 
 const routes: RouteObject[] = [
   {
@@ -21,6 +23,14 @@ const routes: RouteObject[] = [
   {
     path: "/claims",
     element: <ClaimListPage />,
+  },
+  {
+    path: "/admin/accounts",
+    element: <AdminAccountsPage />,
+  },
+  {
+    path: "/admin/claims",
+    element: <AdminClaimsPage />,
   },
   {
     path: "*",

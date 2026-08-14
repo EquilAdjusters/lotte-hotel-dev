@@ -4,28 +4,39 @@ spring:
       on-profile: prod
 
   datasource:
-    url: ${PROD_DB_URL}
-    username: ${PROD_DB_USERNAME}
-    password: ${PROD_DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
+
     show-sql: false
+
+    properties:
+      hibernate:
+        format_sql: false
 
   flyway:
     enabled: true
 
 server:
-  servlet:
-    session:
-      cookie:
-        secure: true
-        same-site: lax
+  port: ${SERVER_PORT:8080}
 
-app:
-  storage:
-    s3:
-      bucket: ${AWS_S3_BUCKET}
-      region: ${AWS_REGION}
-      base-directory: ${AWS_S3_BASE_DIRECTORY:hotel-claim/prod}
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.security: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never

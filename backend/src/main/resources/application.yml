@@ -25,3 +25,13 @@ server:
     session:
       cookie:
         http-only: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never

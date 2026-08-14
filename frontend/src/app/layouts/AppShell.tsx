@@ -9,6 +9,8 @@ const navItems = [
   { to: "/", label: "대시보드", icon: "ri-dashboard-2-line" },
   { to: "/claims/new", label: "사고 접수", icon: "ri-clipboard-line" },
   { to: "/claims", label: "현황 조회", icon: "ri-search-eye-line" },
+  { to: "/admin/claims", label: "클레임 관리", icon: "ri-table-line" },
+  { to: "/admin/accounts", label: "관리자 설정", icon: "ri-settings-3-line" },
 ];
 
 export default function AppShell({ children }: AppShellProps) {
