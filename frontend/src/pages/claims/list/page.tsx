@@ -4,19 +4,23 @@ import AppShell from "@/app/layouts/AppShell";
 import { useAuth } from "@/shared/hooks/useAuth";
 import {
   cancelClaim,
+  deleteClaimAttachment,
   exportClaims,
   fetchClaim,
+  fetchClaimAttachments,
   fetchClaimHistories,
   fetchClaims,
   updateClaim,
 } from "@/entities/claim/api/claimApi";
 import type {
+  ClaimAttachmentResponse,
   ClaimHistoryResponse,
   ClaimListResponse,
   ClaimProgressStatus,
   ClaimResponse,
 } from "@/entities/claim/model/types";
 import {
+  attachmentTypeToLabel,
   claimTypeLabelToEnum,
   claimTypeToLabel,
   consentMethodLabelToEnum,
@@ -557,6 +561,9 @@ function DetailPanel({
               <DetailRow label="접수일자" value={formatDate(detail.createdAt)} isLast />
             </div>
 
+            {/* 첨부파일: BRANCH_SHARED 전용 (백엔드 @PreAuthorize와 동일) */}
+            {isBranchShared && <AttachmentPanel claimId={row.claimId} />}
+
             {/* Assignment info table */}
             <div className="border border-background-200/70 rounded overflow-hidden text-sm">
               <DetailRow label="담당손사업체" value={detail.adjustingCompanyName ?? "-"} />
@@ -765,6 +772,109 @@ function HistoryModal({
             </ul>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AttachmentPanel({ claimId }: { claimId: number }) {
+  const [attachments, setAttachments] = useState<ClaimAttachmentResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+    });
+
+    fetchClaimAttachments(claimId)
+      .then((data) => {
+        if (!cancelled) setAttachments(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError("첨부파일 목록을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [claimId, reloadToken]);
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  };
+
+  const handleDelete = async (attachment: ClaimAttachmentResponse) => {
+    if (!confirm(`${attachment.originalFileName} 파일을 삭제하시겠습니까?`)) return;
+    setBusyId(attachment.id);
+    try {
+      await deleteClaimAttachment(claimId, attachment.id);
+      setReloadToken((t) => t + 1);
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      alert(message ?? "삭제 중 오류가 발생했습니다.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="border border-background-200/70 rounded overflow-hidden text-sm">
+      <div className="bg-background-100 px-3 py-2 text-xs font-medium text-foreground-600">
+        첨부파일
+      </div>
+      <div className="p-3">
+        {loading && (
+          <div className="py-3 text-center text-xs text-foreground-500">불러오는 중...</div>
+        )}
+        {!loading && error && (
+          <div className="py-3 text-center text-xs text-accent-700">{error}</div>
+        )}
+        {!loading && !error && attachments.length === 0 && (
+          <div className="py-3 text-center text-xs text-foreground-500">
+            첨부된 파일이 없습니다.
+          </div>
+        )}
+        {!loading && !error && attachments.length > 0 && (
+          <ul className="space-y-1.5">
+            {attachments.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center justify-between gap-2 rounded border border-background-200/70 px-2.5 py-1.5 text-xs"
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-foreground-800">
+                    {a.originalFileName}
+                  </div>
+                  <div className="text-foreground-500">
+                    {attachmentTypeToLabel[a.attachmentType]} · {formatSize(a.fileSize)} ·{" "}
+                    {new Date(a.createdAt).toLocaleDateString("ko-KR")}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(a)}
+                  disabled={busyId === a.id}
+                  className="shrink-0 text-accent-700 hover:text-accent-800 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                >
+                  삭제
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

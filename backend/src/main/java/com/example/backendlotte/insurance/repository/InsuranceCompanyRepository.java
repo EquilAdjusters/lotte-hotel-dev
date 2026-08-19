@@ -11,4 +11,7 @@ extends JpaRepository<InsuranceCompany, Long> {
 
     List<InsuranceCompany>
         findAllByActiveTrueOrderByNameAsc();
+
+    List<InsuranceCompany>
+        findAllByOrderByNameAsc();
 }

@@ -25,9 +25,14 @@ public class InsuranceCompanyService {
     private final BranchRepository branchRepository;
 
     @Transactional(readOnly = true)
-    public List<InsuranceCompanyResponse> findActive() {
-        return insuranceCompanyRepository
-            .findAllByActiveTrueOrderByNameAsc()
+    public List<InsuranceCompanyResponse> findAll(
+            boolean activeOnly
+    ) {
+        List<InsuranceCompany> companies = activeOnly
+            ? insuranceCompanyRepository.findAllByActiveTrueOrderByNameAsc()
+            : insuranceCompanyRepository.findAllByOrderByNameAsc();
+
+        return companies
             .stream()
             .map(InsuranceCompanyResponse::from)
             .toList();

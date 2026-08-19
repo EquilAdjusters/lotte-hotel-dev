@@ -2,6 +2,7 @@ import { apiClient } from "@/shared/api/client";
 import type { SpringPage } from "@/entities/claim/model/types";
 import type {
   AccountCreatePayload,
+  AccountHistoryResponse,
   AccountResponse,
   AccountSearchCondition,
   AccountUpdatePayload,
@@ -81,4 +82,15 @@ export async function activateAccount(accountId: number): Promise<AccountRespons
 
 export async function deleteAccount(accountId: number): Promise<void> {
   await apiClient.delete(`/api/accounts/${accountId}`);
+}
+
+export async function fetchAccountHistories(
+  accountId: number,
+  params: { page?: number; size?: number } = {}
+): Promise<SpringPage<AccountHistoryResponse>> {
+  const { data } = await apiClient.get<SpringPage<AccountHistoryResponse>>(
+    `/api/accounts/${accountId}/histories`,
+    { params: withoutEmpty(params) }
+  );
+  return data;
 }

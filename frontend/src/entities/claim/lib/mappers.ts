@@ -1,4 +1,5 @@
 import type {
+  ClaimAttachmentType,
   ClaimProgressStatus,
   ClaimType,
   ConsentMethod,
@@ -64,6 +65,15 @@ export const progressStatusBadge: Record<ClaimProgressStatus, string> = {
   CLOSED_PAID: "bg-background-200/80 text-foreground-700",
   CLOSED_EXEMPTED: "bg-background-100 text-foreground-500",
   CANCELLED: "bg-accent-100 text-accent-900",
+};
+
+export const attachmentTypeToLabel: Record<ClaimAttachmentType, string> = {
+  CONSENT_FORM: "개인정보 동의서",
+  ACCIDENT_REPORT: "사고경위서",
+  ACCIDENT_PHOTO: "사고 현장 사진",
+  DAMAGE_PHOTO: "피해 물품·손해 사진",
+  RECEIPT: "영수증",
+  OTHER: "기타",
 };
 
 /**

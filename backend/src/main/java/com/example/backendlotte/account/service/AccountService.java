@@ -19,7 +19,6 @@ import com.example.backendlotte.account.repository.AccountHistoryRepository;
 import com.example.backendlotte.account.repository.AccountRepository;
 import com.example.backendlotte.account.dto.AccountUpdateRequest;
 import com.example.backendlotte.account.dto.AccountPasswordResetRequest;
-import com.example.backendlotte.account.dto.MyPasswordChangeRequest;
 import com.example.backendlotte.auth.service.AccountSessionService;
 
 import lombok.RequiredArgsConstructor;
@@ -285,53 +284,6 @@ public class AccountService {
                         : account.getBranchGroup().getId());
     }
     
-    @Transactional
-    public void changeMyPassword(
-            Long accountId,
-            MyPasswordChangeRequest request,
-            String actorIp
-    ) {
-        Account account = findUsableAccount(accountId);
-
-        validatePasswordConfirmation(
-                request.newPassword(),
-                request.newPasswordConfirm());
-
-        if (request.currentPassword() == null
-                || request.currentPassword().isBlank()) {
-            throw new IllegalArgumentException(
-                    "현재 비밀번호는 필수입니다.");
-        }
-
-        if (!passwordEncoder.matches(
-                request.currentPassword(),
-                account.getPasswordHash())) {
-            throw new IllegalArgumentException(
-                    "현재 비밀번호가 올바르지 않습니다.");
-        }
-
-        if (passwordEncoder.matches(
-                request.newPassword(),
-                account.getPasswordHash())) {
-            throw new IllegalArgumentException(
-                    "새 비밀번호는 현재 비밀번호와 다르게 설정해주세요.");
-        }
-
-        passwordPolicyValidator.validate(
-                request.newPassword());
-
-        account.changePassword(
-                passwordEncoder.encode(request.newPassword()));
-
-        accountHistoryRepository.save(
-                AccountHistory.passwordChanged(
-                        account,
-                        account,
-                        actorIp));
-
-        accountSessionService.expireAllSessions(accountId);
-    }
-
     @Transactional
     public void resetPassword(
             Long accountId,

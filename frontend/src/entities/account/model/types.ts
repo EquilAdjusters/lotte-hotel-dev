@@ -53,3 +53,32 @@ export interface AccountSearchCondition {
   role?: Role | null;
   status?: AccountStatus | null;
 }
+
+export type AccountHistoryType =
+  | "CREATED"
+  | "PASSWORD_CHANGED"
+  | "PASSWORD_RESET"
+  | "ROLE_CHANGED"
+  | "SCOPE_CHANGED"
+  | "STATUS_CHANGED"
+  | "AFFILIATION_CHANGED"
+  | "LOCKED"
+  | "UNLOCKED"
+  | "DELETED"
+  | "UPDATED"
+  | "ACTIVATED"
+  | "DEACTIVATED";
+
+export interface AccountHistoryResponse {
+  id: number;
+  accountId: number;
+  accountLoginId: string;
+  actorAccountId: number | null;
+  actorLoginId: string | null;
+  actionType: AccountHistoryType;
+  beforeValue: string | null;
+  afterValue: string | null;
+  description: string;
+  actorIp: string | null;
+  createdAt: string;
+}

@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.example.backendlotte.account.dto.AccountUpdateRequest;
 import com.example.backendlotte.account.dto.AccountSearchCondition;
@@ -32,9 +31,7 @@ import com.example.backendlotte.account.dto.AccountResponse;
 import com.example.backendlotte.account.service.AccountService;
 import com.example.backendlotte.auth.security.CustomUserDetails;
 import com.example.backendlotte.account.dto.AccountPasswordResetRequest;
-import com.example.backendlotte.account.dto.MyPasswordChangeRequest;
 
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -142,32 +139,6 @@ public class AccountController {
                 request,
                 user.getAccountId(),
                 getClientIp(httpRequest));
-    }
-    
-    @PatchMapping("/me/password")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, String>> changeMyPassword(
-            @Valid @RequestBody MyPasswordChangeRequest request,
-            @AuthenticationPrincipal CustomUserDetails user,
-            HttpServletRequest httpRequest
-    ) {
-        accountService.changeMyPassword(
-                user.getAccountId(),
-                request,
-                getClientIp(httpRequest));
-
-        HttpSession session = httpRequest.getSession(false);
-
-        if (session != null) {
-            session.invalidate();
-        }
-
-        SecurityContextHolder.clearContext();
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "code", "PASSWORD_CHANGED",
-                        "message", "비밀번호가 변경되었습니다. 다시 로그인해주세요."));
     }
     
     @PatchMapping("/{accountId}/password-reset")

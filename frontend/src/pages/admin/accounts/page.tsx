@@ -2,12 +2,17 @@ import { Fragment, useEffect, useState } from "react";
 import axios from "axios";
 import AppShell from "@/app/layouts/AppShell";
 import RequireRole from "@/shared/components/RequireRole";
+import FormField from "@/shared/components/FormField";
+import OrganizationSection from "@/pages/admin/accounts/OrganizationSection";
+import BranchGroupSection from "@/pages/admin/accounts/BranchGroupSection";
+import InsuranceCompanySection from "@/pages/admin/accounts/InsuranceCompanySection";
 import type { Role, ScopeType } from "@/entities/user/model/types";
 import {
   activateAccount,
   createAccount,
   deactivateAccount,
   deleteAccount,
+  fetchAccountHistories,
   fetchAccounts,
   resetAccountPassword,
   unlockAccount,
@@ -15,6 +20,8 @@ import {
 } from "@/entities/account/api/accountApi";
 import type {
   AccountCreatePayload,
+  AccountHistoryResponse,
+  AccountHistoryType,
   AccountResponse,
   AccountStatus,
   AccountUpdatePayload,
@@ -74,6 +81,22 @@ const statusBadge: Record<AccountStatus, string> = {
   DELETED: "bg-background-100 text-foreground-500",
 };
 
+const historyTypeLabel: Record<AccountHistoryType, string> = {
+  CREATED: "계정 생성",
+  PASSWORD_CHANGED: "본인 비밀번호 변경",
+  PASSWORD_RESET: "비밀번호 초기화",
+  ROLE_CHANGED: "역할 변경",
+  SCOPE_CHANGED: "조회범위 변경",
+  STATUS_CHANGED: "상태 변경",
+  AFFILIATION_CHANGED: "소속 변경",
+  LOCKED: "잠금",
+  UNLOCKED: "잠금해제",
+  DELETED: "삭제",
+  UPDATED: "정보 수정",
+  ACTIVATED: "사용재개",
+  DEACTIVATED: "사용중지",
+};
+
 function errorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     const message = (err.response?.data as { message?: string } | undefined)?.message;
@@ -97,6 +120,9 @@ function AdminAccountsContent() {
     <div className="space-y-8">
       <AccountSection />
       <AdjustingCompanySection />
+      <OrganizationSection />
+      <BranchGroupSection />
+      <InsuranceCompanySection />
     </div>
   );
 }
@@ -121,6 +147,7 @@ function AccountSection() {
 
   const [formTarget, setFormTarget] = useState<AccountResponse | "new" | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<AccountResponse | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<AccountResponse | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionBusyId, setActionBusyId] = useState<number | null>(null);
 
@@ -327,6 +354,13 @@ function AccountSection() {
                         >
                           PW 초기화
                         </button>
+                        <button
+                          disabled={busy}
+                          onClick={() => setHistoryTarget(a)}
+                          className="rounded border border-background-300 bg-background-50 px-2 py-1 text-[11px] text-foreground-600 hover:bg-background-100 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                        >
+                          이력
+                        </button>
                         {a.status === "LOCKED" && (
                           <button
                             disabled={busy}
@@ -414,6 +448,13 @@ function AccountSection() {
           account={passwordTarget}
           onClose={() => setPasswordTarget(null)}
           onDone={() => setPasswordTarget(null)}
+        />
+      )}
+
+      {historyTarget && (
+        <AccountHistoryModal
+          account={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </div>
@@ -772,16 +813,90 @@ function PasswordResetModal({
   );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function AccountHistoryModal({
+  account,
+  onClose,
+}: {
+  account: AccountResponse;
+  onClose: () => void;
+}) {
+  const [histories, setHistories] = useState<AccountHistoryResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAccountHistories(account.id, { size: 50 })
+      .then((data) => {
+        if (!cancelled) setHistories(data.content);
+      })
+      .catch(() => {
+        if (!cancelled) setError("이력을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [account.id]);
+
   return (
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-foreground-700">
-        {label}
-      </label>
-      {children}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-lg bg-background-50 p-6 max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="font-heading text-lg font-semibold">
+            계정 이력 · {account.loginId}
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-foreground-500 hover:bg-background-100 cursor-pointer"
+          >
+            <i className="ri-close-line"></i>
+          </button>
+        </div>
+
+        <div className="mt-4">
+          {loading && (
+            <div className="py-10 text-center text-sm text-foreground-500">불러오는 중...</div>
+          )}
+          {!loading && error && (
+            <div className="py-10 text-center text-sm text-accent-700">{error}</div>
+          )}
+          {!loading && !error && histories.length === 0 && (
+            <div className="py-10 text-center text-sm text-foreground-500">이력이 없습니다.</div>
+          )}
+          {!loading && !error && histories.length > 0 && (
+            <ul className="space-y-3">
+              {histories.map((h) => (
+                <li
+                  key={h.id}
+                  className="rounded border border-background-200/70 bg-background-100/40 px-3 py-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-foreground-800">
+                      {historyTypeLabel[h.actionType]}
+                    </span>
+                    <span className="text-[11px] text-foreground-500">
+                      {new Date(h.createdAt).toLocaleString("ko-KR")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-foreground-700">{h.description}</p>
+                  <p className="mt-1 text-[11px] text-foreground-500">
+                    {h.actorLoginId ?? "시스템"}
+                    {h.actorIp ? ` · ${h.actorIp}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
 
 /* ═══════════════════════════ 손사업체현황 ═══════════════════════════ */
 

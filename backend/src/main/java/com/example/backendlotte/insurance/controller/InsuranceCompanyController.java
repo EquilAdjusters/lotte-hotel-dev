@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.backendlotte.insurance.dto.BranchInsuranceSettingRequest;
@@ -32,8 +33,11 @@ public class InsuranceCompanyController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN1', 'ADMIN2')")
-    public List<InsuranceCompanyResponse> findActive() {
-        return insuranceCompanyService.findActive();
+    public List<InsuranceCompanyResponse> findAll(
+            @RequestParam(defaultValue = "true")
+            boolean activeOnly
+    ) {
+        return insuranceCompanyService.findAll(activeOnly);
     }
 
     @PostMapping
