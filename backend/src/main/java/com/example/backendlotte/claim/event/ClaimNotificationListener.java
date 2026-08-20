@@ -25,4 +25,16 @@ public class ClaimNotificationListener {
                 event.claimId()
             );
     }
+
+    @TransactionalEventListener(
+        phase = TransactionPhase.AFTER_COMMIT
+    )
+    public void handleClaimAssigned(
+            ClaimAssignedEvent event
+    ) {
+        notificationService
+            .sendAdjustingCompanyAssignedEmail(
+                event.claimId()
+            );
+    }
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,6 +30,7 @@ import com.example.backendlotte.adjusting.repository.AdjusterRepository;
 import com.example.backendlotte.adjusting.repository.AdjustingCompanyRepository;
 import com.example.backendlotte.claim.entity.Claim;
 import com.example.backendlotte.claim.entity.ClaimHistory;
+import com.example.backendlotte.claim.event.ClaimAssignedEvent;
 import com.example.backendlotte.claim.repository.ClaimHistoryRepository;
 import com.example.backendlotte.claim.repository.ClaimRepository;
 import com.example.backendlotte.claim.specification.ClaimSpecification;
@@ -44,6 +46,7 @@ public class AdjustingService {
     private final ClaimRepository claimRepository;
     private final AccountRepository accountRepository;
     private final ClaimHistoryRepository claimHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<AdjustingCompanyResponse> findCompanies(
@@ -156,6 +159,9 @@ public class AdjustingService {
                             previousValue,
                             currentValue));
         }
+
+        eventPublisher.publishEvent(
+                new ClaimAssignedEvent(claimId));
     }
     
     private String buildAssignmentSnapshot(

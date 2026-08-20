@@ -6,7 +6,9 @@ import org.springframework.transaction.annotation.Propagation;
 
 import com.example.backendlotte.claim.entity.Claim;
 import com.example.backendlotte.claim.repository.ClaimRepository;
+import com.example.backendlotte.claim.type.ClaimType;
 import com.example.backendlotte.notification.dto.NotificationSendResult;
+import com.example.backendlotte.notification.email.EmailSender;
 import com.example.backendlotte.notification.entity.NotificationLog;
 import com.example.backendlotte.notification.repository.NotificationLogRepository;
 import com.example.backendlotte.notification.type.NotificationType;
@@ -22,6 +24,7 @@ public class NotificationService {
     private final ClaimRepository claimRepository;
     private final NotificationLogRepository notificationLogRepository;
     private final NotificationSender notificationSender;
+    private final EmailSender emailSender;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendClaimReceivedNotification(
@@ -101,6 +104,120 @@ public class NotificationService {
                 exception
             );
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendAdjustingCompanyAssignedEmail(
+            Long claimId
+    ) {
+        log.info(
+            "손사배정 이메일 발송 처리 시작 - claimId={}",
+            claimId
+        );
+
+        Claim claim = claimRepository
+            .findById(claimId)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "접수건을 찾을 수 없습니다."
+                )
+            );
+
+        String recipient = claim.getBranch().getReceiptEmail();
+
+        if (recipient == null
+                || recipient.isBlank()) {
+            log.warn(
+                "손사배정 이메일 발송 건너뜀 - claimId={}, 접수메일 미등록",
+                claimId
+            );
+            return;
+        }
+
+        String subject = buildAssignedEmailSubject(claim);
+        String body = buildAssignedEmailBody(claim);
+
+        NotificationLog notificationLog =
+            NotificationLog.pending(
+                claim,
+                NotificationType.ADJUSTING_COMPANY_ASSIGNED,
+                recipient,
+                body
+            );
+
+        notificationLogRepository.save(notificationLog);
+        notificationLogRepository.flush();
+
+        try {
+            NotificationSendResult result =
+                emailSender.send(
+                    recipient,
+                    subject,
+                    body
+                );
+
+            notificationLog.success(
+                result.provider(),
+                result.providerMessageId()
+            );
+
+            log.info(
+                "손사배정 이메일 발송 성공 - claimId={}, notificationLogId={}",
+                claimId,
+                notificationLog.getId()
+            );
+
+        } catch (RuntimeException exception) {
+
+            notificationLog.fail(
+                "SMTP",
+                normalizeFailureReason(
+                    exception.getMessage()
+                )
+            );
+
+            log.error(
+                "손사배정 이메일 발송 실패 - claimId={}, notificationLogId={}",
+                claimId,
+                notificationLog.getId(),
+                exception
+            );
+        }
+    }
+
+    private String buildAssignedEmailSubject(
+        Claim claim
+    ) {
+        return "[호텔롯데 클레임 접수] %s 배정요청".formatted(
+            claim.getAdjustingCompany().getName()
+        );
+    }
+
+    private String buildAssignedEmailBody(
+        Claim claim
+    ) {
+        String adjustingCompanyName =
+            claim.getAdjustingCompany().getName();
+
+        String claimTypeLabel =
+            claim.getClaimType() == ClaimType.LIABILITY
+                ? "배상"
+                : "재물";
+
+        return """
+            안녕하세요 와이즈 보험중개입니다.
+            계약자 요청에 따라 하기건은 %s으로 배정 요청드리며, 빠른 처리부탁드립니다.
+            사고내용 :  %s
+            사고자명 : %s
+            연락처 : %s
+            사고내용 :  %s
+            """.formatted(
+                adjustingCompanyName,
+                claimTypeLabel,
+                claim.getVictimName(),
+                claim.getVictimPhone(),
+                claim.getAccidentDescription()
+            ).trim();
     }
 
     private String buildClaimReceivedMessage(
