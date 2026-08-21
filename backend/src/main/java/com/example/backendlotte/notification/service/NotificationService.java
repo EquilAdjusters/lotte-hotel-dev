@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Propagation;
 import com.example.backendlotte.claim.entity.Claim;
 import com.example.backendlotte.claim.repository.ClaimRepository;
 import com.example.backendlotte.claim.type.ClaimType;
+import com.example.backendlotte.claim.type.PreferredLanguage;
 import com.example.backendlotte.notification.dto.NotificationSendResult;
 import com.example.backendlotte.notification.email.EmailSender;
 import com.example.backendlotte.notification.entity.NotificationLog;
@@ -226,6 +227,22 @@ public class NotificationService {
         String branchName =
             claim.getBranch().getName();
 
+        PreferredLanguage language =
+            claim.getPreferredLanguage() != null
+                ? claim.getPreferredLanguage()
+                : PreferredLanguage.KOREAN;
+
+        return switch (language) {
+            case ENGLISH -> buildClaimReceivedMessageEnglish(branchName);
+            case CHINESE -> buildClaimReceivedMessageChinese(branchName);
+            case JAPANESE -> buildClaimReceivedMessageJapanese(branchName);
+            case KOREAN -> buildClaimReceivedMessageKorean(branchName);
+        };
+    }
+
+    private String buildClaimReceivedMessageKorean(
+        String branchName
+    ) {
         return """
             안녕하세요, 고객님.
             저희는 호텔롯데 %s의 보험업무를 담당하는 와이즈보험중개입니다.
@@ -237,6 +254,69 @@ public class NotificationService {
 
             고객님의 빠른 쾌유를 진심으로 기원하겠습니다.
             감사합니다.
+            """.formatted(
+                branchName,
+                branchName
+            ).trim();
+    }
+
+    private String buildClaimReceivedMessageEnglish(
+        String branchName
+    ) {
+        return """
+            Hello,
+            We are WISE Insurance Brokerage, in charge of insurance matters for Lotte Hotel %s.
+
+            We are truly sorry to hear about your sudden accident and any inconvenience it may have caused. Please accept our sincere condolences.
+
+            Lotte Hotel %s has registered your accident with our insurance. A dedicated claims adjuster will be assigned and will contact you within 2-3 business days.
+
+            Even before an adjuster is assigned, you may proceed with any necessary treatment or repairs. However, please be sure to keep all payment records and detailed receipts for medical or repair costs, as they will be needed for the compensation process.
+
+            We sincerely wish you a speedy recovery.
+            Thank you.
+            """.formatted(
+                branchName,
+                branchName
+            ).trim();
+    }
+
+    private String buildClaimReceivedMessageChinese(
+        String branchName
+    ) {
+        return """
+            您好。
+            我们是负责乐天酒店%s保险业务的WISE保险经纪公司。
+
+            对于突发事故给您带来的惊吓和不便，我们深表慰问。
+
+            目前乐天酒店%s已为您办理事故保险登记。我们将在2~3个工作日内（以营业日为准）指派专属损害查定师与您联系。
+
+            在指派损害查定师之前，如需先行治疗或维修，您可以先行处理。但请务必保留所产生的治疗费、维修费的付款明细及详细收据，后续理赔时需要用到。
+
+            衷心祝愿您早日康复。
+            谢谢。
+            """.formatted(
+                branchName,
+                branchName
+            ).trim();
+    }
+
+    private String buildClaimReceivedMessageJapanese(
+        String branchName
+    ) {
+        return """
+            お客様
+            私どもは、ロッテホテル%sの保険業務を担当しているワイズ保険仲介です。
+
+            突然の事故で驚かれ、ご不便をおかけしましたこと、心よりお見舞い申し上げます。
+
+            現在、ロッテホテル%sにてお客様の事故を保険にてご登録いたしました。営業日基準で2〜3日以内に専任の損害査定士が割り当てられ、ご連絡いたします。
+
+            損害査定士の割り当て前でも、治療や修理が必要な場合は先に進めていただいて構いません。ただし、発生した治療費・修理費のお支払い内訳および領収書は必ず保管しておいてください。今後の補償手続きに必要となります。
+
+            お客様の一日も早いご回復を心よりお祈り申し上げます。
+            ありがとうございます。
             """.formatted(
                 branchName,
                 branchName

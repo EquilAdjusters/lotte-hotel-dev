@@ -3,11 +3,13 @@ export interface AdjustingCompanyOption {
   name: string;
   businessNumber: string;
   active: boolean;
+  hotelCompanyIds: number[];
 }
 
 export interface AdjustingCompanyPayload {
   name: string;
   businessNumber: string | null;
+  hotelCompanyIds: number[];
 }
 
 export interface AdjusterOption {

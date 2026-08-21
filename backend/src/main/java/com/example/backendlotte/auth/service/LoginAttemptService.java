@@ -45,7 +45,8 @@ public class LoginAttemptService {
                 account,
                 ipAddress,
                 userAgent,
-                sessionId
+                sessionId,
+                latestRecordHash()
             )
         );
     }
@@ -92,17 +93,31 @@ public class LoginAttemptService {
                 attemptedLoginId,
                 reason,
                 ipAddress,
-                userAgent
+                userAgent,
+                latestRecordHash()
             )
         );
 
         return newlyLocked;
     }
-    
+
     @Transactional
     public void recordLogout(String sessionId) {
         loginAccessLogRepository
             .findFirstBySessionIdAndSuccessTrueAndLogoutAtIsNull(sessionId)
             .ifPresent(LoginAccessLog::logout);
+    }
+
+    /*
+     * 해시체인의 다음 고리를 이어 붙이기 위해 가장 최근 기록의 recordHash를 가져온다.
+     * 동시에 두 로그인 시도가 겹치면 같은 previousHash를 가리키는 두 기록이
+     * 생길 수 있는데, 이는 실제 위·변조와 구분되는 정상적인 분기이므로
+     * 검증 시 별도로 표시한다.
+     */
+    private String latestRecordHash() {
+        return loginAccessLogRepository
+            .findTopByOrderByIdDesc()
+            .map(LoginAccessLog::getRecordHash)
+            .orElse(null);
     }
 }

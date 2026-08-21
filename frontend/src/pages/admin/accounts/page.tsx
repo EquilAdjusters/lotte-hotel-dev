@@ -905,6 +905,7 @@ function AdjustingCompanySection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [hotelCompanies, setHotelCompanies] = useState<HotelCompanyOption[]>([]);
 
   const [formTarget, setFormTarget] = useState<AdjustingCompanyOption | "new" | null>(
     null
@@ -913,6 +914,10 @@ function AdjustingCompanySection() {
   const [actionBusyId, setActionBusyId] = useState<number | null>(null);
 
   const reload = () => setReloadToken((t) => t + 1);
+
+  useEffect(() => {
+    fetchHotelCompanies().then(setHotelCompanies).catch(() => setHotelCompanies([]));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -987,6 +992,9 @@ function AdjustingCompanySection() {
               <th className="px-3 py-2 text-xs font-medium text-foreground-600">
                 사업자번호
               </th>
+              <th className="px-3 py-2 text-xs font-medium text-foreground-600">
+                적용 호텔사
+              </th>
               <th className="px-3 py-2 text-xs font-medium text-foreground-600">상태</th>
               <th className="px-3 py-2 text-xs font-medium text-foreground-600">관리</th>
             </tr>
@@ -994,21 +1002,21 @@ function AdjustingCompanySection() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-foreground-500">
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-foreground-500">
                   불러오는 중...
                 </td>
               </tr>
             )}
             {!loading && error && (
               <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-accent-700">
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-accent-700">
                   {error}
                 </td>
               </tr>
             )}
             {!loading && !error && companies.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-foreground-500">
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-foreground-500">
                   등록된 손사업체가 없습니다.
                 </td>
               </tr>
@@ -1020,6 +1028,16 @@ function AdjustingCompanySection() {
                   <tr className="border-b border-background-200/60 hover:bg-background-100/60">
                     <td className="px-3 py-2">{c.name}</td>
                     <td className="px-3 py-2">{c.businessNumber || "-"}</td>
+                    <td className="px-3 py-2 text-xs text-foreground-600">
+                      {c.hotelCompanyIds.length === 0
+                        ? "-"
+                        : c.hotelCompanyIds
+                            .map(
+                              (id) =>
+                                hotelCompanies.find((h) => h.id === id)?.name ?? "-"
+                            )
+                            .join(", ")}
+                    </td>
                     <td className="px-3 py-2">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ${
@@ -1069,7 +1087,7 @@ function AdjustingCompanySection() {
                   </tr>
                   {expandedId === c.id && (
                     <tr>
-                      <td colSpan={4} className="bg-background-100/50 px-5 py-4">
+                      <td colSpan={5} className="bg-background-100/50 px-5 py-4">
                         <AdjusterManager company={c} />
                       </td>
                     </tr>
@@ -1083,6 +1101,7 @@ function AdjustingCompanySection() {
       {formTarget && (
         <AdjustingCompanyFormModal
           target={formTarget}
+          hotelCompanies={hotelCompanies}
           onClose={() => setFormTarget(null)}
           onSaved={() => {
             setFormTarget(null);
@@ -1096,10 +1115,12 @@ function AdjustingCompanySection() {
 
 function AdjustingCompanyFormModal({
   target,
+  hotelCompanies,
   onClose,
   onSaved,
 }: {
   target: AdjustingCompanyOption | "new";
+  hotelCompanies: HotelCompanyOption[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -1108,8 +1129,17 @@ function AdjustingCompanyFormModal({
 
   const [name, setName] = useState(existing?.name ?? "");
   const [businessNumber, setBusinessNumber] = useState(existing?.businessNumber ?? "");
+  const [hotelCompanyIds, setHotelCompanyIds] = useState<number[]>(
+    existing?.hotelCompanyIds ?? []
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const toggleHotelCompany = (id: number) => {
+    setHotelCompanyIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -1119,7 +1149,11 @@ function AdjustingCompanyFormModal({
     setSubmitting(true);
     setError(null);
     try {
-      const payload = { name: name.trim(), businessNumber: businessNumber.trim() || null };
+      const payload = {
+        name: name.trim(),
+        businessNumber: businessNumber.trim() || null,
+        hotelCompanyIds,
+      };
       if (isNew) {
         await createAdjustingCompany(payload);
       } else if (existing) {
@@ -1153,6 +1187,26 @@ function AdjustingCompanyFormModal({
               onChange={(e) => setBusinessNumber(e.target.value)}
               className="w-full rounded-md border border-background-300/60 px-3 py-2 text-sm outline-none focus:border-primary-400"
             />
+          </FormField>
+          <FormField label="적용 호텔사">
+            <div className="space-y-1.5 rounded-md border border-background-300/60 px-3 py-2">
+              {hotelCompanies.length === 0 && (
+                <p className="text-xs text-foreground-500">등록된 호텔사가 없습니다.</p>
+              )}
+              {hotelCompanies.map((h) => (
+                <label key={h.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hotelCompanyIds.includes(h.id)}
+                    onChange={() => toggleHotelCompany(h.id)}
+                  />
+                  {h.name}
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-foreground-500">
+              체크한 호텔사의 접수건에서만 이 손사업체가 배정 대상으로 노출됩니다.
+            </p>
           </FormField>
         </div>
         {error && <p className="mt-3 text-xs text-accent-700">{error}</p>}

@@ -25,8 +25,10 @@ import com.example.backendlotte.claim.dto.ClaimResponse;
 import com.example.backendlotte.claim.dto.ClaimSearchCondition;
 import com.example.backendlotte.claim.entity.Claim;
 import com.example.backendlotte.claim.entity.ClaimConsent;
+import com.example.backendlotte.claim.entity.ClaimViewLog;
 import com.example.backendlotte.claim.repository.ClaimConsentRepository;
 import com.example.backendlotte.claim.repository.ClaimRepository;
+import com.example.backendlotte.claim.repository.ClaimViewLogRepository;
 import com.example.backendlotte.claim.specification.ClaimSpecification;
 import com.example.backendlotte.claim.type.VictimType;
 import com.example.backendlotte.organization.repository.BranchGroupMemberRepository;
@@ -43,6 +45,7 @@ public class ClaimService {
 
     private final ClaimRepository claimRepository;
     private final ClaimConsentRepository claimConsentRepository;
+    private final ClaimViewLogRepository claimViewLogRepository;
 
     private final ClaimNumberGenerator claimNumberGenerator;
     private final ClaimAccessContextResolver claimAccessContextResolver;
@@ -355,7 +358,7 @@ public class ClaimService {
                 : trimmed;
     }
     
-    @Transactional(readOnly = true)
+    @Transactional
     public ClaimResponse findOne(
             Long claimId,
             Long accountId
@@ -376,6 +379,13 @@ public class ClaimService {
         validateReadAccess(
             context,
             claim
+        );
+
+        claimViewLogRepository.save(
+            ClaimViewLog.create(
+                claim,
+                context.account()
+            )
         );
 
         ClaimConsent consent =

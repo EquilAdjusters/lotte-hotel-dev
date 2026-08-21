@@ -27,4 +27,8 @@ public interface LoginAccessLogRepository
     Optional<LoginAccessLog> findFirstBySessionIdAndSuccessTrueAndLogoutAtIsNull(
         String sessionId
     );
+
+    Optional<LoginAccessLog> findTopByOrderByIdDesc();
+
+    List<LoginAccessLog> findAllByOrderByIdAsc();
 }

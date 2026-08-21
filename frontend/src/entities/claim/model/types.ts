@@ -82,6 +82,8 @@ export interface ClaimResponse {
   victimName: string;
   victimPhone: string;
   victimBirthDate: string;
+  victimPhoneMasked: string;
+  victimBirthDateMasked: string;
   victimType: VictimType;
   preferredLanguage: PreferredLanguage | null;
 

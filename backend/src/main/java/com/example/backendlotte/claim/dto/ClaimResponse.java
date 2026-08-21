@@ -12,6 +12,7 @@ import com.example.backendlotte.claim.type.ConsentMethod;
 import com.example.backendlotte.claim.type.ConsentStatus;
 import com.example.backendlotte.claim.type.PreferredLanguage;
 import com.example.backendlotte.claim.type.VictimType;
+import com.example.backendlotte.global.util.PersonalDataMasker;
 
 public record ClaimResponse(
 
@@ -33,6 +34,8 @@ public record ClaimResponse(
     String victimName,
     String victimPhone,
     LocalDate victimBirthDate,
+    String victimPhoneMasked,
+    String victimBirthDateMasked,
     VictimType victimType,
     PreferredLanguage preferredLanguage,
 
@@ -87,6 +90,8 @@ public record ClaimResponse(
             claim.getVictimName(),
             claim.getVictimPhone(),
             claim.getVictimBirthDate(),
+            PersonalDataMasker.maskPhone(claim.getVictimPhone()),
+            PersonalDataMasker.maskBirthDate(claim.getVictimBirthDate()),
             claim.getVictimType(),
             claim.getPreferredLanguage(),
 

@@ -52,6 +52,16 @@ public class AdjustingController {
         return adjustingService.findCompanies(activeOnly);
     }
 
+    @GetMapping("/claims/{claimId}/available-companies")
+    @PreAuthorize(
+        "hasAnyRole('ADMIN1', 'ADMIN2')"
+    )
+    public List<AdjustingCompanyResponse> findCompaniesForClaim(
+            @PathVariable Long claimId
+    ) {
+        return adjustingService.findCompaniesForClaim(claimId);
+    }
+
     @GetMapping("/companies/{companyId}/adjusters")
     @PreAuthorize(
         "hasAnyRole('ADMIN1', 'ADMIN2')"

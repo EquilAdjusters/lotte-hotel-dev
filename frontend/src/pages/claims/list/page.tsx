@@ -413,12 +413,6 @@ function DetailPanel({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
-  const maskPhone = (phone?: string | null) => {
-    if (!phone) return "-";
-    const parts = phone.split("-");
-    if (parts.length === 3) return `${parts[0]}-****-${parts[2]}`;
-    return phone;
-  };
 
   const formatDate = (d?: string | null) => {
     if (!d) return "-";
@@ -526,8 +520,8 @@ function DetailPanel({
             {/* Main info table */}
             <div className="border border-background-200/70 rounded overflow-hidden text-sm">
               <DetailRow label="피해자명" value={detail.victimName} />
-              <DetailRow label="생년월일" value={detail.victimBirthDate} />
-              <DetailRow label="휴대전화번호" value={maskPhone(detail.victimPhone)} />
+              <DetailRow label="생년월일" value={detail.victimBirthDateMasked} />
+              <DetailRow label="휴대전화번호" value={detail.victimPhoneMasked} />
               <DetailRow
                 label="내·외국인"
                 value={

@@ -5,8 +5,8 @@ import RequireRole from "@/shared/components/RequireRole";
 import {
   assignClaim,
   fetchAdjusters,
-  fetchAdjustingCompanies,
   fetchAssignmentClaims,
+  fetchAvailableCompaniesForClaim,
 } from "@/entities/adjusting/api/adjustingApi";
 import type {
   AdjusterOption,
@@ -304,11 +304,11 @@ function AssignPanel({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAdjustingCompanies()
+    fetchAvailableCompaniesForClaim(claim.claimId)
       .then(setCompanies)
       .catch(() => setCompanies([]))
       .finally(() => setCompaniesLoading(false));
-  }, []);
+  }, [claim.claimId]);
 
   useEffect(() => {
     if (companyId === "") return;

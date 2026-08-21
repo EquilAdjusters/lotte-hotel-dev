@@ -29,8 +29,11 @@ public class IpAccessService {
             return true;
         }
 
-        // 현재 설계상 ADMIN1만 IP 제한
-        if (account.getRole() != Role.ADMIN1) {
+        // IP 특정 대상: ADMIN1 · ADMIN2 · ADMIN3 (01 회원체계 권한표 기준)
+        // BRANCH_SHARED · ADMIN4는 IP 불특정 · 모바일 접속 허용
+        if (account.getRole() != Role.ADMIN1
+                && account.getRole() != Role.ADMIN2
+                && account.getRole() != Role.ADMIN3) {
             return true;
         }
 
@@ -48,7 +51,7 @@ public class IpAccessService {
                 account.getRole()
             );
 
-        // ADMIN1인데 허용 IP가 하나도 없으면 접근 차단
+        // IP 제한 대상 역할인데 허용 IP가 하나도 등록되어 있지 않으면 접근 차단
         return !roleRules.isEmpty()
                 && matchesAny(roleRules, clientIp);
     }

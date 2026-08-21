@@ -2,7 +2,9 @@ package com.example.backendlotte.adjusting.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,8 @@ import com.example.backendlotte.adjusting.entity.Adjuster;
 import com.example.backendlotte.adjusting.entity.AdjustingCompany;
 import com.example.backendlotte.adjusting.repository.AdjusterRepository;
 import com.example.backendlotte.adjusting.repository.AdjustingCompanyRepository;
+import com.example.backendlotte.organization.entity.HotelCompany;
+import com.example.backendlotte.organization.repository.HotelCompanyRepository;
 import com.example.backendlotte.claim.entity.Claim;
 import com.example.backendlotte.claim.entity.ClaimHistory;
 import com.example.backendlotte.claim.event.ClaimAssignedEvent;
@@ -47,6 +51,7 @@ public class AdjustingService {
     private final AccountRepository accountRepository;
     private final ClaimHistoryRepository claimHistoryRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final HotelCompanyRepository hotelCompanyRepository;
 
     @Transactional(readOnly = true)
     public List<AdjustingCompanyResponse> findCompanies(
@@ -57,6 +62,27 @@ public class AdjustingService {
             : adjustingCompanyRepository.findAllByOrderByNameAsc();
 
         return companies
+            .stream()
+            .map(AdjustingCompanyResponse::from)
+            .toList();
+    }
+
+    /*
+     * AD-02 손사업체 지정 드롭다운용.
+     * AD-01에서 그 접수건의 호텔사에 연결해 둔 손사업체만 노출한다.
+     */
+    @Transactional(readOnly = true)
+    public List<AdjustingCompanyResponse> findCompaniesForClaim(
+            Long claimId
+    ) {
+        Claim claim = claimRepository
+            .findById(claimId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                    "접수건을 찾을 수 없습니다."));
+
+        return adjustingCompanyRepository
+            .findAllByHotelCompanies_IdAndActiveTrueOrderByNameAsc(
+                claim.getHotelCompany().getId())
             .stream()
             .map(AdjustingCompanyResponse::from)
             .toList();
@@ -237,7 +263,8 @@ public class AdjustingService {
         AdjustingCompany company =
                 AdjustingCompany.create(
                 request.name().trim(),
-                trimToNull(request.businessNumber())
+                trimToNull(request.businessNumber()),
+                resolveHotelCompanies(request.hotelCompanyIds())
                 );
 
         adjustingCompanyRepository.save(company);
@@ -262,6 +289,10 @@ public class AdjustingService {
         company.update(
                 request.name().trim(),
                 trimToNull(request.businessNumber())
+        );
+
+        company.updateHotelCompanies(
+                resolveHotelCompanies(request.hotelCompanyIds())
         );
 
         return AdjustingCompanyResponse.from(company);
@@ -382,6 +413,19 @@ public class AdjustingService {
                 );
 
         adjuster.activate();
+        }
+
+        private Set<HotelCompany> resolveHotelCompanies(
+                List<Long> hotelCompanyIds
+        ) {
+        if (hotelCompanyIds == null
+                        || hotelCompanyIds.isEmpty()) {
+                return new HashSet<>();
+        }
+
+        return new HashSet<>(
+                hotelCompanyRepository.findAllById(hotelCompanyIds)
+        );
         }
 
         private String trimToNull(

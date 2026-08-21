@@ -42,6 +42,15 @@ export async function fetchAdjustingCompanies(
   return data;
 }
 
+export async function fetchAvailableCompaniesForClaim(
+  claimId: number
+): Promise<AdjustingCompanyOption[]> {
+  const { data } = await apiClient.get<AdjustingCompanyOption[]>(
+    `/api/adjusting/claims/${claimId}/available-companies`
+  );
+  return data;
+}
+
 export async function fetchAdjusters(
   companyId: number,
   activeOnly = true

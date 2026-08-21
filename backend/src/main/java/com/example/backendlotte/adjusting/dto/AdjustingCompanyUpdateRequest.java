@@ -1,5 +1,7 @@
 package com.example.backendlotte.adjusting.dto;
 
+import java.util.List;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -10,7 +12,9 @@ public record AdjustingCompanyUpdateRequest(
     String name,
 
     @Size(max = 30)
-    String businessNumber
+    String businessNumber,
+
+    List<Long> hotelCompanyIds
 
 ) {
 }
