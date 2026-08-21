@@ -209,7 +209,7 @@ export default function LoginPage() {
           <span>
             WISE Insurance Brokerage Co., Ltd. · 고객사 전용 내부 시스템
           </span>
-          <span>© 2026 WISE 보험중개</span>
+          <span>© 2026 이퀄손해사정</span>
         </div>
       </footer>
 

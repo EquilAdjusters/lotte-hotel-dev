@@ -180,7 +180,7 @@ export default function AppShell({ children }: AppShellProps) {
       <footer className="border-t border-background-200/70 bg-background-100">
         <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-foreground-500 sm:flex-row">
           <span>
-            © {new Date().getFullYear()} WISE Insurance Brokerage × Hotel Lotte · Claim Management System
+            © {new Date().getFullYear()} 이퀄손해사정 × Hotel Lotte · Claim Management System
           </span>
           <span>내부 직원 전용 시스템 · v1.0</span>
         </div>
